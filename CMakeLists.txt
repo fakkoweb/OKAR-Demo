@@ -12,7 +12,7 @@ project (OgreTest)
 set (source_dir_name "source")		# name of the dir containing ALL implementations
 set (header_dir_name "include")		# name of the dir containing ALL declarations
 set (binary_dir_name "build")		# name of the dir that will contain build results (Release, Debug, ..) and .dll
-set(exe_name "OgreTest")			# mame of executable
+set (exe_name "OgreTest")			# mame of executable
 set (distribution_dir_name "dist")	# name of the dir that contains final distribution files, such as:
 									#	- data files (managed by you)
 									#	- final release executable files (automatically copied on INSTALL)
@@ -277,7 +277,6 @@ if(WIN32)
 		DESTINATION ${CMAKE_SOURCE_DIR}/${distribution_dir_name}
 		CONFIGURATIONS Release RelWithDebInfo
 	)
-	message( ${OGRE_PLUGIN_DIR_REL})
  	
  	# Run "INSTALL" to copy dll into bin folder (application using dll don't work otherwise!)	
  		# NOTE: from the 1.7.1 sdk the OIS debug dll is called OIS_d.dll instead of libOIS_d.dll

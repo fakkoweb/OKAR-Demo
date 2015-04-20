@@ -10,7 +10,7 @@ This source file is part of the
 / \_// (_| | | |  __/  \  /\  /| |   <| |
 \___/ \__, |_|  \___|   \/  \/ |_|_|\_\_|
       |___/
-Tutorial Framework (for Ogre 1.10)
+Tutorial Framework (for Ogre 1.9)
 http://www.ogre3d.org/wiki/
 -----------------------------------------------------------------------------
 */
@@ -37,33 +37,31 @@ void TutorialApplication::createScene(void)
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
 #endif
-#include <iostream>
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-    int main(int argc, char *argv[])
+int main(int argc, char *argv[])
+
     {
         // Create application object
         TutorialApplication app;
 
         try {
             app.go();
-        } catch(Ogre::Exception& e) {
+        } catch(Ogre::Exception& e)  {
 
             std::cerr << "An exception has occurred: " <<
                 e.getFullDescription().c_str() << std::endl;
+
         }
 
         return 0;
     }
 
-
 #ifdef __cplusplus
 }
 #endif
-
 
 //---------------------------------------------------------------------------
