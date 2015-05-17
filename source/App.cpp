@@ -36,20 +36,22 @@ App::App()
 	mSmallWindow = NULL;
 	mRift = NULL;
 
-	//Ogre engine setup
+	//Ogre engine setup (creates Ogre main rendering window)
 	initOgre();
-	//Input/Output setup
+
+	//Rift Setup (creates Oculus rendering window and Oculus inner scene - user shouldn't care about it)
+	initRift();
+
+	//Input/Output setup (associate I/O to Oculus window)
 	initOIS();
 
-	// Instanciate a custom "Scene" object
+	// Create Ogre main scene (setup and populate main scene)
 	// This class implements App logic!!
-	mScene = new Scene( mRoot, mMouse, mKeyboard );
+	mScene = new Scene(mRoot, mMouse, mKeyboard);
+	mScene->setIPD(mRift->getIPD());
 
-	//Viewport setup
+	//Viewport setup (link scene cameras to Ogre/Oculus windows)
 	createViewports();
-
-	//Rift Setup
-	initRift();
 
 	//Ogre::WindowEventUtilities::messagePump();
 
@@ -78,31 +80,71 @@ App::~App()
 
 void App::initOgre()
 {
+	// Config file class is an utility that parses and stores values from a .cfg file
+	Ogre::ConfigFile cf;
+	std::string configFilePathPrefix = "cfg/";			// configuration files default location when app is installed
+#ifdef _DEBUG
+	std::string pluginsFileName = "plugins_d.cfg";		// plugins config file name (Debug mode)
+#else
+	std::string pluginsFileName = "plugins.cfg";		// plugins config file name (Release mode)
+#endif
+	std::string resourcesFileName = "resources.cfg";	// resources config file name (Debug/Release mode)
+
+
+	// LOAD OGRE PLUGINS
+	// Try to load load up a valid config file (and don't start the program if none is found)
+	try
+	{
+		//This will work ONLY when application is installed (only Release application)!
+		cf.load(configFilePathPrefix + pluginsFileName);
+	}
+	catch (Ogre::FileNotFoundException &e)
+	{
+		try
+		{
+			// if no existing config, or could not restore it, try to load from a different location
+			configFilePathPrefix = "../cfg/";
+
+			//This will work ONLY when application is in development (Debug/Release configuration)
+			cf.load(configFilePathPrefix + pluginsFileName);			
+		}
+		catch (Ogre::FileNotFoundException &e)
+		{
+			// launch exception if no valid config file is found! - PROGRAM WON'T START!
+			throw e;
+		}
+	}
+
+
 	// INSTANCIATE OGRE ROOT (IT INSTANCIATES ALSO ALL OTHER OGRE COMPONENTS)
 	// In Ogre, the singletons are instanciated explicitly (with new) the first time,
 	// then it can be accessed with Ogre::Root::getSingleton()
 	// Plugins are passed as argument to the "Root" constructor
-#ifdef _DEBUG
-	mRoot = new Ogre::Root("plugins_d.cfg");
-#else
-	mRoot = new Ogre::Root("plugins.cfg");
-#endif
+	mRoot = new Ogre::Root(configFilePathPrefix + pluginsFileName, configFilePathPrefix + "ogre.cfg", "ogre.log");
+	// No Ogre::FileNotFoundException is thrown by this, that's why we tried to open it first with ConfigFile::load()
 
-	// Then setup THIS CLASS INSTANCE as a frame listener
-	// This means that Ogre will call frameStarted(), frameRenderingQueued() and frameEnded()
-	// automatically and periodically if defined in this class
-	mRoot->addFrameListener(this);
-
+	
 	// LOAD OGRE RESOURCES
-	// Load up resources according to resources.cfg
-	// Config file class is an utility that parses and stores values from a .cfg file
-	Ogre::ConfigFile cf;
-#ifdef _DEBUG
-	cf.load("resources_d.cfg");
-#else
-	cf.load("resources.cfg");
-#endif
- 
+	// Load up resources according to resources.cfg ("cf" variable is reused)
+	try
+	{
+		//This will work ONLY when application is installed!
+		cf.load("cfg/resources.cfg");
+	}
+	catch (Ogre::FileNotFoundException &e)	// It works, no need to change anything
+	{
+		try
+		{
+			//This will work ONLY when application is in development (Debug/Release configuration)
+			cf.load("../cfg/resources.cfg");
+		}
+		catch (Ogre::FileNotFoundException &e)
+		{
+			// launch exception if no valid config file is found! - PROGRAM WON'T START!
+			throw e;
+		}
+	}
+
     // Go through all sections & settings in the file
     Ogre::ConfigFile::SectionIterator seci = cf.getSectionIterator();
     Ogre::String secName, typeName, archName;
@@ -120,7 +162,14 @@ void App::initOgre()
         }
 	}
 
-	// CUSTOMIZE OGRE RENDERING (with OpenGL)
+
+	// Then setup THIS CLASS INSTANCE as a frame listener
+	// This means that Ogre will call frameStarted(), frameRenderingQueued() and frameEnded()
+	// automatically and periodically if defined in this class
+	mRoot->addFrameListener(this);
+
+
+	// SELECT AND CUSTOMIZE OGRE RENDERING (OpenGL)
 	// Get a reference of the RenderSystem in Ogre that I want to customize
 	Ogre::RenderSystem* pRS = mRoot->getRenderSystemByName("OpenGL Rendering Subsystem");
 	// Get current config RenderSystem options in a ConfigOptionMap
@@ -138,10 +187,12 @@ void App::initOgre()
 	for(Ogre::ConfigOptionMap::iterator iter = cfgMap.begin(); iter != cfgMap.end(); iter++) pRS->setConfigOption(iter->first, iter->second.currentValue);
 	// Set this RenderSystem as the one I want to use
 	mRoot->setRenderSystem(pRS);
-	// Initialize it
+	// Initialize it: "false" is DO NOT CREATE A WINDOW FOR ME
 	mRoot->initialise(false, "Oculus Rift Visualization");
 
+
 	// CREATE WINDOWS
+	/* REMOVED: Rift class creates the window if no null is passed to its constructor
 	// Options for Window 1 (rendering window)
 	Ogre::NameValuePairList miscParams;
 	if( NO_RIFT )
@@ -149,17 +200,21 @@ void App::initOgre()
 	else
 		miscParams["monitorIndex"] = Ogre::StringConverter::toString(1);
 	miscParams["border "] = "none";
+	*/
 
-	// Options for Window 2 (debug window)
-	Ogre::NameValuePairList miscParamsSmall;
-	miscParamsSmall["monitorIndex"] = Ogre::StringConverter::toString(0);
-
+	/*
 	// Create Window 1
 	if( !ROTATE_VIEW )
-		mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1280, 800, true, &miscParams);
-		//mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1920*0.5, 1080*0.5, false, &miscParams);
+	mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1280, 800, true, &miscParams);
+	//mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1920*0.5, 1080*0.5, false, &miscParams);
 	else
-		mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, true, &miscParams);
+	mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, true, &miscParams);
+	*/
+
+	// Options for Window 2 (debug window)
+	// This window will simply show what the two cameras see in two different viewports
+	Ogre::NameValuePairList miscParamsSmall;
+	miscParamsSmall["monitorIndex"] = Ogre::StringConverter::toString(0);
 
 	// Create Window 2
 	if( DEBUG_WINDOW )
@@ -174,6 +229,7 @@ void App::createViewports()
 	// Each viewport is assigned to a RenderTarget (a RenderWindow in this case) and spans half of the screen
 	// A pointer to a Viewport is returned, so we can access it directly.
 	// CAMERA -> render into -> VIEWPORT (rectangle area) -> displayed into -> WINDOW
+	/*
 	if (mWindow)		//check if Ogre rendering window has been created
 	{
 		if (NO_RIFT)
@@ -184,15 +240,19 @@ void App::createViewports()
 			mViewportR->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
 		}
 
-		/*if( !ROTATE_VIEW )
+		if( !ROTATE_VIEW )
 		{
 		mScene->getLeftCamera()->setAspectRatio( 0.5*mWindow->getWidth()/mWindow->getHeight() );
 		mScene->getRightCamera()->setAspectRatio( 0.5*mWindow->getWidth()/mWindow->getHeight() );
 		} else {
 		mScene->getLeftCamera()->setAspectRatio( 0.5*mWindow->getHeight()/mWindow->getWidth() );
 		mScene->getRightCamera()->setAspectRatio( 0.5*mWindow->getHeight()/mWindow->getWidth() );
-		}*/
+		/
 	}
+	*/
+
+	// Plug the virtual stereo camera rig to Rift class (they will be rendered on Oculus screen)
+	mRift->setCameras(mScene->getLeftCamera(), mScene->getRightCamera());
 
 	// Create similar viewports to be displayed into PC window
 	if (mSmallWindow)
@@ -261,16 +321,14 @@ void App::initRift()
 	// Try to initialize the Oculus Rift (ID 0):
 	try {
 		// This class implements a custom C++ Class version of RIFT C API
-		//Rift::init();
-		mRift = new Rift( 0, mRoot, mWindow, ROTATE_VIEW );
-		mRift->setCameras( mScene->getLeftCamera(), mScene->getRightCamera() );
-		mScene->setIPD( mRift->getIPD() );
+		//Rift::init();		//OPTIONAL: automatically called by Rift constructor, if necessary
+		mRift = new Rift( 0, mRoot, mWindow /*if null, Rift creates the window*/, ROTATE_VIEW );
 	}
 	catch (const std::ios_base::failure& e) {
 		std::cout << ">> " << e.what() << std::endl;
-		NO_RIFT = true;
+		//NO_RIFT = true;
 		mRift = NULL;
-		//mShutdown = true;
+		mShutdown = true;
 	}
 }
 
@@ -292,7 +350,6 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	//calculate delay and show
 	delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - last_request);
 	frames_per_second(delay.count());
-
 
 	if (mShutdown) return false;
 

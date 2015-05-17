@@ -29,62 +29,112 @@ void Rift::shutdown()
 // Per-Device methods (non static):
 /////////////////////////////////////////
 
-Rift::Rift(int ID)
+
+Rift::Rift(const unsigned int ID, Ogre::Root* const root, Ogre::RenderWindow* &renderWindow, const bool rotateView)
 {
+	if (root == nullptr) throw std::invalid_argument("'root' is null. Rift instance not created.");
+
 	// Init OVR lib (if I am the first created)
 	Rift::init();
 
-	std::cout << "Creating Rift (ID: " << ID << ")" << std::endl;
 
+	// ---------------------------------
+	// Try to locate physical Rift device
 	hmd = NULL;
+	std::cout << "Creating Rift (ID: " << ID << ")" << std::endl;
 	hmd = ovrHmd_Create(ID);
 	if (!hmd)
 	{
+		// No Rift detected: no sensor data, but Oculus window will be displayed anyway
 		hmd = NULL;
-		//Rift::shutdown();
-		//throw std::ios_base::failure("No Oculus Rift found");
+		std::cout << "Oculus Rift NOT found.\nSimulating Oculus DK2..." << std::endl;
+		
+		hmd = ovrHmd_CreateDebug(ovrHmd_DK2);
+		if (!hmd)
+		{
+			Rift::shutdown();
+			throw std::ios_base::failure("Unable to initialize Rift class.");
+		}
+		simulationMode = true;
+		std::cout<<"Simulation enabled: a window will show a dummy Oculus DK2 output." << std::endl;
+
 	}
-
-	std::cout << "Oculus Rift found." << std::endl;
-	std::cout << "\tProduct Name: " << hmd->ProductName << std::endl;
-	std::cout << "\tProduct ID: " << hmd->ProductId << std::endl;
-	std::cout << "\tFirmware: " << hmd->FirmwareMajor << "." << hmd->FirmwareMinor << std::endl;
-	std::cout << "\tResolution: " << hmd->Resolution.w << "x" << hmd->Resolution.h << std::endl;
-
-	if (!ovrHmd_ConfigureTracking(hmd, ovrTrackingCap_Orientation | ovrTrackingCap_MagYawCorrection | ovrTrackingCap_Position, 0))
+	else
 	{
-		ovrHmd_Destroy(hmd);
-		Rift::shutdown();
-		throw std::ios_base::failure("t\tThis Rift does not support the features needed by the application.");
+		// Rift detected
+		simulationMode = false;
+		std::cout << "Oculus Rift found." << std::endl;
+		std::cout << "\tProduct Name: " << hmd->ProductName << std::endl;
+		std::cout << "\tProduct ID: " << hmd->ProductId << std::endl;
+		std::cout << "\tFirmware: " << hmd->FirmwareMajor << "." << hmd->FirmwareMinor << std::endl;
+		std::cout << "\tResolution: " << hmd->Resolution.w << "x" << hmd->Resolution.h << std::endl;
+		std::cout << "Oculus Rift found." << std::endl;
+
+		// If Rift not supported, throw exception
+		if (!ovrHmd_ConfigureTracking(hmd, ovrTrackingCap_Orientation | ovrTrackingCap_MagYawCorrection | ovrTrackingCap_Position, 0))
+		{
+			ovrHmd_Destroy(hmd);
+			Rift::shutdown();
+			throw std::ios_base::failure("\tThis Rift does not support the features needed by the application.");
+		}
 	}
+
+
+	// -----------------------------------
+	createRiftDisplayScene(root, rotateView);
+
+
+	// -----------------------------------
+	// Create Oculus render window, if needed
+	if (renderWindow == NULL)
+	{
+		// no window defined by the user: create it and save to the user
+		createRiftDisplayWindow(root);
+		renderWindow = mRenderWindow;
+	}
+	else
+	{
+		// window already available: save it
+		mRenderWindow = renderWindow;
+	}
+	// Link mCamera (inner scene Oculus camera) to Oculus rendering window
+	mViewport = mRenderWindow->addViewport(mCamera);
+	mViewport->setBackgroundColour(Ogre::ColourValue::Black);
+	mViewport->setOverlaysEnabled(true);
+
 }
 
-Rift::Rift(int ID, Ogre::Root* root, Ogre::RenderWindow* renderWindow, bool rotateView) : Rift::Rift(ID)
+void Rift::createRiftDisplayWindow(Ogre::Root* const root)
 {
-	setWindow(root, renderWindow, rotateView);
+
+	//Setup Oculus rendering window options
+	Ogre::NameValuePairList miscParams;
+	if (simulationMode)
+	{
+		// No rift: creating standard window
+		miscParams["monitorIndex"] = Ogre::StringConverter::toString(0);
+	}
+	else
+	{
+		// Yes rift: creating full screen window in secondary screen (extended mode)
+		// Options Oculus rendering window
+		miscParams["monitorIndex"] = Ogre::StringConverter::toString(1);
+		miscParams["border "] = "none";
+	}
+
+	// Creating Oculus rendering window
+	if (true)
+		mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1280, 800, !simulationMode, &miscParams);
+		//mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1920*0.5, 1080*0.5, false, &miscParams);
+	else
+		mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, !simulationMode, &miscParams);
+
 }
 
-Rift::~Rift()
+void Rift::createRiftDisplayScene(Ogre::Root* const root, const bool rotateView)
 {
-	if(hmd) ovrHmd_Destroy(hmd);
-	
-	// Shutdown OVR lib (if I am the last Rift object to be destroyed)
-	Rift::shutdown();
-}
-
-
-void Rift::setWindow(Ogre::Root* root, Ogre::RenderWindow* renderWindow, bool rotateView)
-{
-	// Init OVR lib (if I am the first created)
-	//Rift::init();
-
-	//std::cout << "Creating Rift (ID: " << ID << ")" << std::endl;
-
 	mSceneMgr = root->createSceneManager(Ogre::ST_GENERIC);
 	mSceneMgr->setAmbientLight(Ogre::ColourValue(0.5, 0.5, 0.5));
-
-	mRenderWindow = renderWindow;
-
 
 	// Configure Render Textures:
 	Sizei recommendedTex0Size = ovrHmd_GetFovTextureSize(hmd, ovrEye_Left,
@@ -151,7 +201,8 @@ void Rift::setWindow(Ogre::Root* root, Ogre::RenderWindow* renderWindow, bool ro
 				UVScaleOffset);
 			params = mMatLeft->getTechnique(0)->getPass(0)->getVertexProgramParameters();
 		}
-		else {
+		else
+		{
 			ovrHmd_GetRenderScaleAndOffset(eyeRenderDesc[eyeNum].Fov,
 				recommendedTex1Size, viewports[eyeNum],
 				UVScaleOffset);
@@ -209,30 +260,31 @@ void Rift::setWindow(Ogre::Root* root, Ogre::RenderWindow* renderWindow, bool ro
 		meshNode->attachObject(manual);
 	}
 
-	// Create a camera in the (new, external) scene so the mesh can be rendered onto it:
+	// Create a camera in the Oculus inner scene so the two meshes can be rendered onto it:
 	mCamera = mSceneMgr->createCamera("OculusRiftExternalCamera");
 	mCamera->setFarClipDistance(50);
 	mCamera->setNearClipDistance(0.001);
 	mCamera->setProjectionType(Ogre::PT_ORTHOGRAPHIC);
 	mCamera->setOrthoWindow(2, 2);
-
 	if (rotateView)
 	{
 		mCamera->roll(Ogre::Degree(-90));
 	}
-
 	mSceneMgr->getRootSceneNode()->attachObject(mCamera);
-
 	meshNode->setPosition(0, 0, -1);
 	meshNode->setScale(1, 1, -1);
-
-	mViewport = mRenderWindow->addViewport(mCamera);
-	mViewport->setBackgroundColour(Ogre::ColourValue::Black);
-	mViewport->setOverlaysEnabled(true);
 
 	// Set up IPD in meters:
 	mIPD = ovrHmd_GetFloat(hmd, OVR_KEY_IPD, 0.064f);
 	mPosition = Ogre::Vector3::ZERO;
+}
+
+Rift::~Rift()
+{
+	if(hmd) ovrHmd_Destroy(hmd);
+	
+	// Shutdown OVR lib (if I am the last Rift object to be destroyed)
+	Rift::shutdown();
 }
 
 // Takes the two cameras created in the scene and creates Viewports in the correct render textures:

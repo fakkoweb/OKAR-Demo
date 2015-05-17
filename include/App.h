@@ -31,7 +31,8 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		void quitOgre();
 		void initOIS();
 		void quitOIS();
-		void createWindows();
+		//TODO: separate Ogre initialization from windows creation (Oculus NEEDS a window or to create a window to start!)
+		//void createWindows();
 		void createViewports();
 
 		void quit();
