@@ -15,6 +15,7 @@ Scene::Scene( Ogre::Root* root, OIS::Mouse* mouse, OIS::Keyboard* keyboard )
 
 	createRoom();
 	createCameras();
+	createVideos();
 }
 
 Scene::~Scene()
@@ -119,6 +120,43 @@ void Scene::createCameras()
 	mBodyNode->attachObject(light);
 }
 
+void Scene::createVideos()
+{
+
+	//Create an Plane class instance that describes our plane (no position or orientation, just mathematical description)
+	Ogre::Plane videoPlane(Ogre::Vector3::UNIT_Y, 0);
+
+	//Create a static mesh out of the plane (as a REUSABLE "resource")
+	Ogre::MeshManager::getSingleton().createPlane(
+		"videoMesh",										// this is the name that our resource will have for the whole application!
+		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+		videoPlane,											// this is the instance from which we build the mesh
+		10, 10, 20, 20,
+		true,
+		1, 5, 5,
+		Ogre::Vector3::UNIT_Z);								// this is the vector that will be used as mesh UP direction
+
+	//Create an ogre Entity out of the resource we created (more Entities can be created out of a resource!)
+	Ogre::Entity* videoPlaneEntity = mSceneMgr->createEntity("videoMesh");
+
+	//Prepare an Ogre SceneNode where we will attach the newly created Entity (as child of mHeadNode)
+	mVideoLeft = mHeadNode->createChildSceneNode("LeftVideo");
+
+	//Attach videoPlaneEntity to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation
+	mVideoLeft->attachObject(videoPlaneEntity);
+
+	//Last two operations could have also been done in one step, but we would not get the SceneNode pointer to save in mVideoLeft
+	// mSceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(videoPlaneEntity);
+	
+	//Setup videoPlaneEntity rendering proprieties (INDEPENDENT FROM mVideoLeft SceneNode!!)
+	videoPlaneEntity->setCastShadows(false);
+	videoPlaneEntity->setMaterialName("CubeMaterialWhite");
+	
+	//Setup mVideoLeft SceneNode position/scale/orientation
+	mVideoLeft->setPosition(0, 0, -2);
+	
+}
+
 void Scene::update( float dt )
 {
 	float forward = (mKeyboard->isKeyDown( OIS::KC_W ) ? 0 : 1) + (mKeyboard->isKeyDown( OIS::KC_S ) ? 0 : -1);
@@ -151,6 +189,12 @@ void Scene::setIPD( float IPD )
 	mCamLeft->setPosition( -IPD/2.0f, 0.0f, 0.0f );
 	mCamRight->setPosition( IPD/2.0f, 0.0f, 0.0f );
 }
+
+//////////////////////////////////////////////////////////////
+// Handle Camera Input:
+//////////////////////////////////////////////////////////////
+void Scene::setCameraTextureLeft(const cv::Mat &image, Ogre::Quaternion pose)
+{}
 
 //////////////////////////////////////////////////////////////
 // Handle Input:

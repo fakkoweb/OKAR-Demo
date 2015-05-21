@@ -42,6 +42,9 @@ class Rift
 		// returns interpupillary distance in meters: (Default: 0.064m)
 		float getIPD() { return mIPD; }
 
+		// TEMP
+		ovrHmd getHandle() { return hmd; }
+
 		Ogre::SceneManager* getSceneMgr() { return mSceneMgr; }
 
 		// Used to reset head position and orientation to "foreward".
@@ -87,25 +90,6 @@ class Rift
 		Ogre::RenderWindow* mRenderWindow;
 		Ogre::Viewport* mViewport;
 		void createRiftDisplayWindow(Ogre::Root* const root);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		//Ogre::SceneNode* mRoomNode;
-		
-		
-
-
 	
 };
 

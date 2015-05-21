@@ -7,6 +7,7 @@
 
 //class Rift;
 
+#include "Camera.h"
 #include "Rift.h"
 #include <sstream>
 #include <string.h>
@@ -40,6 +41,9 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		void initRift();
 		void quitRift();
 
+		void initCameras();
+		void quitCameras();
+
 		bool keyPressed(const OIS::KeyEvent& e );
 		bool keyReleased(const OIS::KeyEvent& e );
 		bool mouseMoved(const OIS::MouseEvent& e );
@@ -68,6 +72,9 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		Scene* mScene;
 
 		Rift* mRift;
+
+		FrameCaptureHandler* mCameraLeft;
+		FrameCaptureHandler* mCameraRight;
 };
 
 #endif

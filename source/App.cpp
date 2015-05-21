@@ -42,6 +42,9 @@ App::App()
 	//Rift Setup (creates Oculus rendering window and Oculus inner scene - user shouldn't care about it)
 	initRift();
 
+	//Stereo camera rig setup ()
+	initCameras();
+
 	//Input/Output setup (associate I/O to Oculus window)
 	initOIS();
 
@@ -63,6 +66,7 @@ App::~App()
 {
 	std::cout << "Deleting Ogre application." << std::endl;
 
+	quitCameras();
 	quitRift();
 
 	std::cout << "Deleting Scene:" << std::endl;
@@ -339,6 +343,27 @@ void App::quitRift()
 	//Rift::shutdown();
 }
 
+////////////////////////////////////////////////////////////////
+// Init Cameras (Device and API initialization, setup and close):
+////////////////////////////////////////////////////////////////
+
+void App::initCameras()
+{
+	//mCameraLeft = new FrameCaptureHandler(0, mRift);
+	//mCameraRight = new FrameCaptureHandler(1, mRift);
+
+	//mCameraLeft->startCapture();
+	//mCameraRight->startCapture();
+}
+
+void App::quitCameras()
+{
+	//mCameraLeft->stopCapture();
+	//mCameraRight->stopCapture();
+	//if (mCameraLeft) delete mCameraLeft;
+	//if (mCameraRight) delete mCameraRight;
+}
+
 ////////////////////////////////////////////////////////////
 // Handle Rendering (Ogre::FrameListener)
 ////////////////////////////////////////////////////////////
@@ -347,31 +372,49 @@ void App::quitRift()
 // Good time to update measurements and physics before rendering next frame!
 bool App::frameRenderingQueued(const Ogre::FrameEvent& evt) 
 {
-	//calculate delay and show
+	// FRAME RATE DISPLAY
+	//calculate delay from last frame and show
 	delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - last_request);
 	frames_per_second(delay.count());
 
 	if (mShutdown) return false;
 
+	// [RIFT] UPDATE
+	// update Oculus information and sends it to Scene (Position/Orientation of character's head)
 	if(mRift)
 	{
-		if ( mRift->update( evt.timeSinceLastFrame ) )
+		if ( mRift->update( evt.timeSinceLastFrame ) )		// saves new orientation/position information
 		{
-			mScene->setRiftPose( mRift->getOrientation(), mRift->getPosition() );
+			mScene->setRiftPose( mRift->getOrientation(), mRift->getPosition() );	// sets orientation/position to a SceneNode
 		} else {
 			delete mRift;
 			mRift = NULL;
 		}
 	}
 
-	//update the standard input devices
+	// [CAMERA] UPDATE
+	// update cameras information and sends it to Scene (Texture of pictures planes/shapes)
+	FrameCaptureData uno;
+	/*
+	if (mCameraLeft && mCameraLeft->get(uno))
+	{
+		mScene->setCameraTextureLeft(uno.image,uno.pose);
+	}
+	*/
+
+
+
+
+	// [OIS] UPDATE
+	// update standard input devices state
 	mKeyboard->capture();
 	mMouse->capture();
 
-	//call updates on scene elements
+	// [OGRE] UPDATE
+	// updates all remaining Scene Nodes
 	mScene->update( evt.timeSinceLastFrame );
 
-	//get now time
+	//save time point for this frame (for frame rate calculation)
 	last_request = std::chrono::system_clock::now();
 
 	//exit if key ESCAPE pressed 

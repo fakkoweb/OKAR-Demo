@@ -3,6 +3,7 @@
 
 #include "OGRE/Ogre.h"
 #include "OIS/OIS.h"
+#include <opencv2\opencv.hpp>
 
 class Scene
 {
@@ -15,6 +16,7 @@ class Scene
 		// Initialising/Loading the scene
 		void createRoom();
 		void createCameras();
+		void createVideos();
 
 		void update( float dt );
 
@@ -23,6 +25,8 @@ class Scene
 		void setIPD( float IPD );
 
 		void setRiftPose( Ogre::Quaternion orientation, Ogre::Vector3 pos );
+		void setCameraTextureLeft(const cv::Mat &image, Ogre::Quaternion pose);
+		//void setCameraTextureRight();
 
 		// Keyboard and mouse events:
 		bool keyPressed(const OIS::KeyEvent&);
@@ -40,6 +44,7 @@ class Scene
 		Ogre::Camera* mCamLeft;
 		Ogre::Camera* mCamRight;
 
+		Ogre::SceneNode* mVideoLeft;
 		Ogre::SceneNode* mHeadNode;
 		Ogre::SceneNode* mBodyNode;
 		Ogre::SceneNode* mBodyTiltNode;
