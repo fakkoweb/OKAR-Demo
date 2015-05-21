@@ -5,7 +5,7 @@
 #include "OIS/OIS.h"
 #include <opencv2\opencv.hpp>
 
-class Scene
+class Scene : public Ogre::Camera::Listener
 {
 	public:
 		Scene( Ogre::Root* root, OIS::Mouse* mouse, OIS::Keyboard* keyboard );
@@ -22,18 +22,23 @@ class Scene
 
 		Ogre::Camera* getLeftCamera() { return mCamLeft; }
 		Ogre::Camera* getRightCamera() { return mCamRight; }
+		Ogre::Camera* getGodCamera() { return mCamGod; }
 		void setIPD( float IPD );
 
 		void setRiftPose( Ogre::Quaternion orientation, Ogre::Vector3 pos );
 		void setCameraTextureLeft(const cv::Mat &image, Ogre::Quaternion pose);
 		//void setCameraTextureRight();
 
-		// Keyboard and mouse events:
+		// Keyboard and mouse events (forwarded by App)
 		bool keyPressed(const OIS::KeyEvent&);
 		bool keyReleased(const OIS::KeyEvent&);
 		bool mouseMoved(const OIS::MouseEvent&);
 		bool mousePressed(const OIS::MouseEvent&, OIS::MouseButtonID);
 		bool mouseReleased(const OIS::MouseEvent&, OIS::MouseButtonID);
+
+		// Virtual Camera events (deriving from Ogre::Camera::Listener)
+		void cameraPostRenderScene(Ogre::Camera* cam);
+		void cameraPreRenderScene(Ogre::Camera* cam);
 
 	private:
 		Ogre::Root* mRoot;
@@ -43,6 +48,7 @@ class Scene
 
 		Ogre::Camera* mCamLeft;
 		Ogre::Camera* mCamRight;
+		Ogre::Camera* mCamGod;
 
 		Ogre::SceneNode* mVideoLeft;
 		Ogre::SceneNode* mHeadNode;

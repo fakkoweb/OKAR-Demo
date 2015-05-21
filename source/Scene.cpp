@@ -53,7 +53,7 @@ void Scene::createRoom()
 
 	Ogre::Light* roomLight = mSceneMgr->createLight();
 	roomLight->setType(Ogre::Light::LT_POINT);
-	roomLight->setCastShadows( true );
+	roomLight->setCastShadows( false );
 	roomLight->setShadowFarDistance( 30 );
 	roomLight->setAttenuation( 65, 1.0, 0.07, 0.017 );
 	roomLight->setSpecularColour( .25, .25, .25 );
@@ -68,8 +68,9 @@ void Scene::createCameras()
 {
 	mCamLeft = mSceneMgr->createCamera("LeftCamera");
 	mCamRight = mSceneMgr->createCamera("RightCamera");
+	mCamGod = mSceneMgr->createCamera("GodCamera");
 
-	// Create a scene nodes which the cams will be attached to:
+	// Create a scene nodes which the virtual stereo cams will be attached to:
 	mBodyNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("BodyNode");
 	mBodyTiltNode = mBodyNode->createChildSceneNode();
 	mHeadNode = mBodyTiltNode->createChildSceneNode("HeadNode"); 
@@ -77,9 +78,10 @@ void Scene::createCameras()
 
 	mHeadNode->attachObject(mCamLeft);
 	mHeadNode->attachObject(mCamRight);
-
-	// Position cameras according to interpupillary distance
-	float dist = 0.05;
+	
+	// Position cameras to a STANDARD INITIAL interpupillary distance
+	// It should be set later by calling setIPD() method
+	float dist = 0.064f;
 	/*if (mRift->isAttached())
 	{
 		dist = mRift->getStereoConfig().GetIPD();
@@ -101,7 +103,7 @@ void Scene::createCameras()
 
 	/*mHeadLight = mSceneMgr->createLight();
 	mHeadLight->setType(Ogre::Light::LT_POINT);
-	mHeadLight->setCastShadows( true );
+	mHeadLight->setCastShadows( false );
 	mHeadLight->setShadowFarDistance( 30 );
 	mHeadLight->setAttenuation( 65, 1.0, 0.07, 0.017 );
 	mHeadLight->setSpecularColour( 1.0, 1.0, 1.0 );
@@ -111,6 +113,16 @@ void Scene::createCameras()
 	mBodyNode->setPosition( 4.0, 1.5, 4.0 );
 	//mBodyNode->lookAt( Ogre::Vector3::ZERO, Ogre::SceneNode::TS_WORLD );
 
+
+	// Position God camera according to the room
+	mRoomNode->attachObject(mCamGod);
+	mCamGod->setFarClipDistance(50);
+	mCamGod->setNearClipDistance(0.001);
+	mCamGod->setPosition(5, 5, 5);
+	mCamGod->lookAt(mBodyNode->getPosition());
+
+
+	// Position a light on the body
 	Ogre::Light* light = mSceneMgr->createLight();
 	light->setType(Ogre::Light::LT_POINT);
 	light->setCastShadows( false );
@@ -124,17 +136,17 @@ void Scene::createVideos()
 {
 
 	//Create an Plane class instance that describes our plane (no position or orientation, just mathematical description)
-	Ogre::Plane videoPlane(Ogre::Vector3::UNIT_Y, 0);
+	Ogre::Plane videoPlane(Ogre::Vector3::UNIT_Z, 0);
 
 	//Create a static mesh out of the plane (as a REUSABLE "resource")
 	Ogre::MeshManager::getSingleton().createPlane(
 		"videoMesh",										// this is the name that our resource will have for the whole application!
 		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
 		videoPlane,											// this is the instance from which we build the mesh
-		10, 10, 20, 20,
+		1, 1, 20, 20,
 		true,
 		1, 5, 5,
-		Ogre::Vector3::UNIT_Z);								// this is the vector that will be used as mesh UP direction
+		Ogre::Vector3::UNIT_Y);								// this is the vector that will be used as mesh UP direction
 
 	//Create an ogre Entity out of the resource we created (more Entities can be created out of a resource!)
 	Ogre::Entity* videoPlaneEntity = mSceneMgr->createEntity("videoMesh");
@@ -153,7 +165,14 @@ void Scene::createVideos()
 	videoPlaneEntity->setMaterialName("CubeMaterialWhite");
 	
 	//Setup mVideoLeft SceneNode position/scale/orientation
-	mVideoLeft->setPosition(0, 0, -2);
+	// X-axis:	will be set up the same as virtual cameras IPD -> see setIPD()
+	// Y-axis:	0 = solidal with mHeadNode
+	// Z-axis:	will be set up depending on the physical camera FOV -> see setFOV()
+	//			toghether with its scale (scale and z position are proportional)
+	mVideoLeft->setPosition(0, 0, -1.0);
+
+	//Set camera listeners to this class (so that I can do stuff before and after each renders)
+	mCamLeft->addListener(this);
 	
 }
 
@@ -188,6 +207,9 @@ void Scene::setIPD( float IPD )
 {
 	mCamLeft->setPosition( -IPD/2.0f, 0.0f, 0.0f );
 	mCamRight->setPosition( IPD/2.0f, 0.0f, 0.0f );
+
+	//mVideoLeft->setPosition(-IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
+	//mVideoRight->setPosition(IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
 }
 
 //////////////////////////////////////////////////////////////
@@ -224,4 +246,23 @@ bool Scene::mousePressed( const OIS::MouseEvent& e, OIS::MouseButtonID id )
 bool Scene::mouseReleased( const OIS::MouseEvent& e, OIS::MouseButtonID id )
 {
 	return true;
+}
+
+//////////////////////////////////////////////////////////////
+// Handle Virtual Camera Events:
+//////////////////////////////////////////////////////////////
+void Scene::cameraPreRenderScene(Ogre::Camera* cam)
+{
+	if (cam == mCamLeft)
+	{
+		mVideoLeft->setVisible(true, false);
+	}
+}
+
+void Scene::cameraPostRenderScene(Ogre::Camera* cam)
+{
+	if (cam == mCamLeft)
+	{
+		mVideoLeft->setVisible(false, false);
+	}
 }

@@ -274,7 +274,7 @@ void Rift::createRiftDisplayScene(Ogre::Root* const root, const bool rotateView)
 	meshNode->setPosition(0, 0, -1);
 	meshNode->setScale(1, 1, -1);
 
-	// Set up IPD in meters:
+	// Get IPD from Rift Driver and set it up (in meters)
 	mIPD = ovrHmd_GetFloat(hmd, OVR_KEY_IPD, 0.064f);
 	mPosition = Ogre::Vector3::ZERO;
 }

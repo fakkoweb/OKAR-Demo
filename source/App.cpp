@@ -224,6 +224,17 @@ void App::initOgre()
 	if( DEBUG_WINDOW )
 		mSmallWindow = mRoot->createRenderWindow("DEBUG Oculus Rift Liver Visualization", 1920*debugWindowSize, 1080*debugWindowSize, false, &miscParamsSmall);   
 
+	// Options for Window 3 (god window)
+	// This debug window will show the whole scene from a top view perspective
+	Ogre::NameValuePairList miscParamsGod;
+	miscParamsSmall["monitorIndex"] = Ogre::StringConverter::toString(0);
+	
+	// Create Window 3
+	if (DEBUG_WINDOW)
+		mGodWindow = mRoot->createRenderWindow("DEBUG God Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParamsSmall);
+
+
+
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
 }
 
@@ -266,6 +277,12 @@ void App::createViewports()
 
 		Ogre::Viewport* debugR = mSmallWindow->addViewport(mScene->getRightCamera(), 1, 0.5, 0.0, 0.5, 1.0);
 		debugR->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
+	}
+
+	// Create a God view window from a third view camera
+	if (mGodWindow)
+	{
+		Ogre::Viewport* god = mGodWindow->addViewport(mScene->getGodCamera(), 0, 0.0, 0.0, 1.0, 1.0);
 	}
 }
 
@@ -349,18 +366,18 @@ void App::quitRift()
 
 void App::initCameras()
 {
-	//mCameraLeft = new FrameCaptureHandler(0, mRift);
+	mCameraLeft = new FrameCaptureHandler(0, mRift);
 	//mCameraRight = new FrameCaptureHandler(1, mRift);
 
-	//mCameraLeft->startCapture();
+	mCameraLeft->startCapture();
 	//mCameraRight->startCapture();
 }
 
 void App::quitCameras()
 {
-	//mCameraLeft->stopCapture();
+	mCameraLeft->stopCapture();
 	//mCameraRight->stopCapture();
-	//if (mCameraLeft) delete mCameraLeft;
+	if (mCameraLeft) delete mCameraLeft;
 	//if (mCameraRight) delete mCameraRight;
 }
 

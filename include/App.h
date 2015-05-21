@@ -63,6 +63,7 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 
 		Ogre::RenderWindow* mWindow;
 		Ogre::RenderWindow* mSmallWindow;
+		Ogre::RenderWindow* mGodWindow;
 		Ogre::Viewport* mViewportL;
 		Ogre::Viewport* mViewportR;
 
