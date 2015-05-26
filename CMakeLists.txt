@@ -102,7 +102,7 @@ if(WIN32)
 	# if at least one of them is defined, use it	
 	else()
 		if (NOT DEFINED OGRE_HOME)
-			message("Environment variable OGRE_HOME found. This will be used as OculusSDK folder.")
+			message("Environment variable OGRE_HOME found. This will be used as OgreSDK folder.")
 			set(OGRE_HOME $ENV{OGRE_HOME})
 		endif()
 		if (NOT DEFINED OGRE_BUILD OR "${OGRE_BUILD}" STREQUAL "")
@@ -254,6 +254,11 @@ target_link_libraries("${exe_name}"
 	#${Boost_LIBRARY_DIRS}							# Boost libraries (if your Ogre needs it)
 	${OCULUS_SDK_LIBRARIES}							# OCULUSSDK lib
 )
+message( 	${OpenCV_LIBS}						
+	${OIS_LIBRARIES}							
+	${OGRE_LIBRARIES}							
+	${OGRE_Overlay_LIBRARIES}				
+	${OCULUS_SDK_LIBRARIES}	 )					
 
 # Win32 specific
 if( WIN32 )

@@ -13,6 +13,7 @@
 #include <string.h>
 #include "OGRE/Ogre.h"
 #include "OIS/OIS.h"
+#include <SdkTrays.h>
 #include "Scene.h"
 #include "Globals.h"
 
@@ -22,7 +23,7 @@
 // Creates the Ogre application
 // Constructor: initializes Ogre (initOgre) and OIS (initOIS), allocates the Scene and viewports (createViewports), inizializes Oculus (initRift) and STARTS RENDERING
 // Destructor: deallocates all above
-class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::MouseListener
+class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::MouseListener, OgreBites::SdkTrayListener
 {
 	public:
 		App();
@@ -32,6 +33,8 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		void quitOgre();
 		void initOIS();
 		void quitOIS();
+		void initTray();
+		void quitTray();
 		//TODO: separate Ogre initialization from windows creation (Oculus NEEDS a window or to create a window to start!)
 		//void createWindows();
 		void createViewports();
@@ -61,9 +64,18 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 
 		Ogre::Root* mRoot;
 
-		Ogre::RenderWindow* mWindow;
-		Ogre::RenderWindow* mSmallWindow;
-		Ogre::RenderWindow* mGodWindow;
+		Ogre::RenderWindow* mWindow = nullptr;
+		
+		// interface display
+		Ogre::OverlaySystem* mOverlaySystem;
+		OgreBites::SdkTrayManager*	mTrayMgr;
+		OgreBites::InputContext     mInputContext;
+		OgreBites::ParamsPanel*     mDetailsPanel;   	// Sample details panel
+		bool                        mCursorWasVisible;	// Was cursor visible before dialog appeared?
+		bool                        mShutDown;
+
+		Ogre::RenderWindow* mSmallWindow = nullptr;
+		Ogre::RenderWindow* mGodWindow = nullptr;
 		Ogre::Viewport* mViewportL;
 		Ogre::Viewport* mViewportR;
 
@@ -76,6 +88,7 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 
 		FrameCaptureHandler* mCameraLeft;
 		FrameCaptureHandler* mCameraRight;
+		Ogre::PixelBox mOgrePixelBoxLeft;	//Ogre containers for opencv Mat image raw data
 };
 
 #endif

@@ -4,6 +4,7 @@
 #include "OGRE/Ogre.h"
 #include "OIS/OIS.h"
 #include <opencv2\opencv.hpp>
+#include "Globals.h"
 
 class Scene : public Ogre::Camera::Listener
 {
@@ -26,7 +27,7 @@ class Scene : public Ogre::Camera::Listener
 		void setIPD( float IPD );
 
 		void setRiftPose( Ogre::Quaternion orientation, Ogre::Vector3 pos );
-		void setCameraTextureLeft(const cv::Mat &image, Ogre::Quaternion pose);
+		void setCameraTextureLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose);
 		//void setCameraTextureRight();
 
 		// Keyboard and mouse events (forwarded by App)
@@ -47,6 +48,11 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::SceneManager* mSceneMgr;
 
 		Ogre::Camera* mCamLeft;
+		
+		Ogre::Image mLeftCameraRenderImage;
+
+		Ogre::TexturePtr mLeftCameraRenderTexture;
+		Ogre::MaterialPtr mLeftCameraRenderMaterial;
 		Ogre::Camera* mCamRight;
 		Ogre::Camera* mCamGod;
 

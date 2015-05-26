@@ -1,4 +1,7 @@
 #include "Scene.h"
+#include <chrono>
+
+bool camera_frame_updated = false;
 
 Scene::Scene( Ogre::Root* root, OIS::Mouse* mouse, OIS::Keyboard* keyboard )
 {
@@ -134,6 +137,8 @@ void Scene::createCameras()
 
 void Scene::createVideos()
 {
+	// CREATE SHAPES
+	// -------------
 
 	//Create an Plane class instance that describes our plane (no position or orientation, just mathematical description)
 	Ogre::Plane videoPlane(Ogre::Vector3::UNIT_Z, 0);
@@ -143,9 +148,9 @@ void Scene::createVideos()
 		"videoMesh",										// this is the name that our resource will have for the whole application!
 		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
 		videoPlane,											// this is the instance from which we build the mesh
-		1, 1, 20, 20,
+		1, 1, 1, 1,
 		true,
-		1, 5, 5,
+		1, 1, 1,
 		Ogre::Vector3::UNIT_Y);								// this is the vector that will be used as mesh UP direction
 
 	//Create an ogre Entity out of the resource we created (more Entities can be created out of a resource!)
@@ -173,7 +178,37 @@ void Scene::createVideos()
 
 	//Set camera listeners to this class (so that I can do stuff before and after each renders)
 	mCamLeft->addListener(this);
+
+
+	// CREATE TEXTURES
+	// ---------------
+
 	
+
+	//Create two special textures (TU_RENDERTARGET) that will be applied to the two videoPlaneEntities
+	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
+		"RenderTextureCameraLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+		Ogre::TEX_TYPE_2D, 640, 480, 0, Ogre::PF_R8G8B8,
+		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
+
+	// Creare new materials and assign the two textures that can be used on the shapes created
+	mLeftCameraRenderMaterial = Ogre::MaterialManager::getSingleton().create("Scene/LeftCamera", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+	Ogre::Technique *technique = mLeftCameraRenderMaterial->createTechnique();
+	technique->createPass();
+	mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->createTextureUnitState("RenderTextureCameraLeft");
+	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+	
+	// Assign materials to videoPlaneEntities
+	videoPlaneEntity->setMaterialName("Scene/LeftCamera");
+
+	// Retrieve the "render target pointer" from the two textures (so we can use it as a standard render target as a window)
+	//Ogre::RenderTexture* mLeftCameraRenderTextureA = mLeftCameraRenderTexture->getBuffer()->getRenderTarget();
+
+	// Link the cameras to the render targets
+	//mLeftCameraRenderTextureA->addViewport(mCamLeft);	// no value parameters = camera will take the whole viewport space
+	//mLeftCameraRenderTextureA->getViewport(0)->setClearEveryFrame(true);	// false = infinite trails effect
+	//mLeftCameraRenderTextureA->getViewport(0)->setBackgroundColour(Ogre::ColourValue::Black);
+	//mLeftCameraRenderTextureA->getViewport(0)->setOverlaysEnabled(false);	// false = no overlays rendered, if any
 }
 
 void Scene::update( float dt )
@@ -215,8 +250,14 @@ void Scene::setIPD( float IPD )
 //////////////////////////////////////////////////////////////
 // Handle Camera Input:
 //////////////////////////////////////////////////////////////
-void Scene::setCameraTextureLeft(const cv::Mat &image, Ogre::Quaternion pose)
-{}
+void Scene::setCameraTextureLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose)
+{
+	mLeftCameraRenderTexture->getBuffer()->blitFromMemory(image);
+	camera_frame_updated = true;
+	//mLeftCameraRenderImage.loadDynamicImage(image.data, image.getWidth(), image.getHeight(), 1, Ogre::PF_BYTE_RGB);
+	//mLeftCameraRenderTexture->loadImage(mLeftCameraRenderImage);
+	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+}
 
 //////////////////////////////////////////////////////////////
 // Handle Input:
@@ -263,6 +304,14 @@ void Scene::cameraPostRenderScene(Ogre::Camera* cam)
 {
 	if (cam == mCamLeft)
 	{
+		// FRAME RATE DISPLAY
+		//calculate delay from last frame and show
+		if (camera_frame_updated)
+		{
+			camera_last_frame_display_delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - camera_last_frame_request_time);
+			std::cout << "Camera milliseconds delay: " << camera_last_frame_display_delay.count() << " ms"<< std::endl;
+			camera_frame_updated = false;
+		}
 		mVideoLeft->setVisible(false, false);
 	}
 }
