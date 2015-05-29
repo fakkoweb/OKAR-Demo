@@ -1,6 +1,6 @@
 /************************************************************************************
 
-Filename    :   Vision_SensorStateReader.h
+Filename    :   [EXTENDED FROM] Vision_SensorStateReader.h
 Content     :   Separate reader component that is able to recover sensor pose
 Created     :   June 4, 2014
 Authors     :   Chris Taylor
@@ -24,8 +24,8 @@ limitations under the License.
 
 *************************************************************************************/
 
-#ifndef OVR_Vision_SensorStateReader_EXTENT_h
-#define OVR_Vision_SensorStateReader_EXTENT_h
+#ifndef OVR_TrackingStateReaderExtended_h
+#define OVR_TrackingStateReaderExtended_h
 
 //This header file extends the TrackingStateReader class by reimplementing some tracking functions
 #include "Vision\SensorFusion\Vision_SensorStateReader.h"
@@ -35,7 +35,7 @@ namespace OVR { namespace Vision {
 
 
 //-----------------------------------------------------------------------------
-// TrackingStateReaderExtended
+// ***** TrackingStateReaderExtended
 
 // User interface to retrieve pose from the sensor fusion subsystem
 class TrackingStateReaderExtended : public TrackingStateReader
@@ -47,7 +47,7 @@ public:
     // Get the full dynamical system state of the CPF, which includes velocities and accelerations,
     // predicted at a specified absolute point in time.
 	// "Extended" to support absoluteTime in the past
-    bool         GetTrackingStateAtTimeExtended(double absoluteTime, TrackingState& state) const;
+    bool         GetTrackingStateAtTimeExtended(double absoluteTime, ovrTrackingState& state) const;
 
     // Get the predicted pose (orientation, position) of the center pupil frame (CPF) at a specific point in time.
 	// "Extended" to support absoluteTime in the past
