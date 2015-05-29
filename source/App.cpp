@@ -455,7 +455,7 @@ void App::quitCameras()
 // Good time to update measurements and physics before rendering next frame!
 bool App::frameRenderingQueued(const Ogre::FrameEvent& evt) 
 {
-	// FRAME RATE DISPLAY
+	// [TIME] FRAME RATE DISPLAY
 	//calculate delay from last frame and show
 	ogre_last_frame_delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ogre_last_frame_displayed_time);
 	frames_per_second(ogre_last_frame_delay.count());
@@ -475,15 +475,10 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		}
 	}
 
-
-	//mTrayMgr->frameRenderingQueued(evt);
-
 	// [CAMERA] UPDATE
 	// update cameras information and sends it to Scene (Texture of pictures planes/shapes)
 	FrameCaptureData uno;
-	
-	// if camera is initialized and there is a new frame
-	if (mCameraLeft && mCameraLeft->get(uno))
+	if (mCameraLeft && mCameraLeft->get(uno))	// if camera is initialized AND there is a new frame
 	{
 		std::cout << "Drawing the frame in debug window..." << std::endl;
 
@@ -497,14 +492,9 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		mOgrePixelBoxLeft = Ogre::PixelBox(640, 480, 1, Ogre::PF_R8G8B8, uno.image.ptr<uchar>(0));
 		std::cout << "sending new image to the scene..." << std::endl;
 		mScene->setCameraTextureLeft(mOgrePixelBoxLeft,uno.pose);
-		std::cout << "image sent!" << std::endl;
-
+		std::cout << "image sent!\nImage plane updated!" << std::endl;
 
 	}
-	
-
-
-
 
 	// [OIS] UPDATE
 	// update standard input devices state
@@ -512,10 +502,12 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	mMouse->capture();
 
 	// [OGRE] UPDATE
-	// updates all remaining Scene Nodes
+	// perform any other update that regards the Scene only (ex. Physics calculations)
 	mScene->update( evt.timeSinceLastFrame );
+	//mTrayMgr->frameRenderingQueued(evt);
 
-	//save time point for this frame (for frame rate calculation)
+	// [TIME] UPDATE
+	// save time point for this frame (for frame rate calculation)
 	ogre_last_frame_displayed_time = std::chrono::system_clock::now();
 
 	//exit if key ESCAPE pressed 
