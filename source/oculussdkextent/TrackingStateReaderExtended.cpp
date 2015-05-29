@@ -1,6 +1,6 @@
 /************************************************************************************
 
-Filename    :   [EXTENDED FROM] Vision_SensorStateReader.cpp
+Filename    :   Vision_SensorStateReader.cpp
 Content     :   Separate reader component that is able to recover sensor pose
 Created     :   June 4, 2014
 Authors     :   Chris Taylor
@@ -25,7 +25,7 @@ limitations under the License.
 *************************************************************************************/
 
 #include "oculussdkextent\TrackingStateReaderExtended.h"
-#include "util.h" // for sgn() and abs() or other custom made util functions in this project
+#include "util.h"				// for sgn() or other custom made util functions in this project
 
 
 
@@ -105,7 +105,7 @@ PoseState<float> calcPredictedPoseStateExtended(const LocklessSensorState& senso
 }
 
 
-bool TrackingStateReaderExtended::GetTrackingStateAtTimeExtended(double absoluteTime, ovrTrackingState& ss) const
+bool TrackingStateReaderExtended::GetTrackingStateAtTimeExtended(double absoluteTime, TrackingState& ss) const
 {
     LocklessCameraState cameraState;
     LocklessSensorState sensorState;
@@ -145,7 +145,7 @@ bool TrackingStateReaderExtended::GetTrackingStateAtTimeExtended(double absolute
 
 bool TrackingStateReaderExtended::GetPoseAtTimeExtended(double absoluteTime, Posef& transform) const
 {
-    ovrTrackingState ss;
+    TrackingState ss;
 
     if (!GetTrackingStateAtTimeExtended(absoluteTime, ss))
     {
