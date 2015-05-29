@@ -25,9 +25,6 @@ limitations under the License.
 *************************************************************************************/
 
 #include "oculussdkextent\TrackingStateReaderExtended.h"
-#include "util.h"				// for sgn() or other custom made util functions in this project
-
-
 
 namespace OVR { namespace Vision {
 
@@ -50,18 +47,16 @@ static Pose<double> calcPredictedPoseExtended(const PoseState<double>& poseState
 
     // This could be tuned so that linear and angular are combined with different coefficients
     double speed = angularSpeed + linearCoef * poseState.LinearVelocity.Length();
-	
+
     const double slope = 0.2; // The rate at which the dynamic prediction interval varies
     double candidateDt = slope * speed; // TODO: Replace with smoothstep function
-										// Assumption made:	if predictionDt > 0 speed is constant until t=candidateDt
-										//					if predictionDt < 0 speed has been constant from t=-candidateDt
 
     double dynamicDt = predictionDt;
 
-    // Choose the candidate if candidate is shorter than prediction, to improve stability
-    if (abs(predictionDt) > candidateDt)	// TWEAKED!
+    // Choose the candidate if it is shorter, to improve stability
+    if (candidateDt < predictionDt)
     {
-        dynamicDt = candidateDt*sgn(predictionDt);	// must preserve the sign
+        dynamicDt = candidateDt;
     }
 
     if (angularSpeed > 0.001)
@@ -81,19 +76,18 @@ PoseState<float> calcPredictedPoseStateExtended(const LocklessSensorState& senso
     static const double maxPdt = 0.1;
 
     // If delta went negative due to synchronization problems between processes or just a lag spike,
-    /* if (pdt < 0)		// CONSIDER ALSO THIS CASE!
+    if (pdt < 0)
     {
         pdt = 0;
-    } */
-    if (abs(pdt) > maxPdt)	// if prediction is too in the future (or in the past), it is clamped to maxPdt
+    }
+    else if (pdt > maxPdt)
     {
-        pdt = maxPdt*sgn(pdt);	// TWEAKED!
+        pdt = maxPdt;
         static double lastLatWarnTime = 0;
         if (lastLatWarnTime != sensorState.WorldFromImu.TimeInSeconds)
         {
             lastLatWarnTime = sensorState.WorldFromImu.TimeInSeconds;
-			// I AM FAILING TO LINK THE FOLLOWING FUNCTION...
-            // LogText("[TrackingStateReader] Prediction interval too high: %f s, clamping at %f s\n", pdt, maxPdt);
+            LogText("[TrackingStateReader] Prediction interval too high: %f s, clamping at %f s\n", pdt, maxPdt);
         }
     }
 
