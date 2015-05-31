@@ -163,7 +163,7 @@ if(WIN32)
 		message("Local OculusSDK lib folder found. This will be used as OculusSDK folder.")
 		set(OCULUS_HOME "${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OculusSDK")
 		set(OCULUS_SDK_INCLUDE_DIRS "${OCULUS_HOME}/LibOVR/Include")
-		list(APPEND OCULUS_SDK_INCLUDE_DIRS "${OCULUS_HOME}/LibOVRKernel/Src")
+		list(APPEND OCULUS_SDK_INCLUDE_DIRS "${OCULUS_HOME}/LibOVRKernel/Src")		# THIS IS WIERD.. but i need it for compiling an header from OculusSDK
 	endif()
 
 	# set OCULUS_SDK_ROOT_DIR as OCULUS_HOME (compatibility reasons)!
