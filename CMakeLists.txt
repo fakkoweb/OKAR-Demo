@@ -35,10 +35,11 @@ set(cmake_test_VERSION_PATCH 0)
 project (OgreTest)
 
 # all directories names relative to CMAKE_SOURCE_DIR
+set (libs_dir_name	 "libs")		# name of the dir containing ALL subprojects/libs to be compiled toghether with this project
 set (source_dir_name "source")		# name of the dir containing ALL implementations
 set (header_dir_name "include")		# name of the dir containing ALL declarations
 set (binary_dir_name "build")		# name of the dir that will contain build results (Release, Debug, ..)
-set (media_dir_name "media")		# name of the dir containing LOCAL media (not Ogre's or any other 3rd party app)
+set (media_dir_name  "media")		# name of the dir containing LOCAL media (not Ogre's or any other 3rd party app)
 									# ALSO the name of the dir where both LOCAL and GLOBAL media will be INSTALLED in /dist
 									# WARNING: SET REFERENCES IN PROGRAM OR ANY CONFIGURATION FILES ACCORDINGLY!!
 set (config_dir_name "cfg")			# name of the dir containing CONFIGURATION FILES (Ogre's or any other)
@@ -144,26 +145,30 @@ endif(UNIX)
 ################################################################
 
 if(WIN32)
-	# check if OCULUS_HOME is defined
-	if (NOT DEFINED ENV{OCULUS_HOME} AND NOT DEFINED OCULUS_HOME)
-		if( NOT EXISTS "${CMAKE_SOURCE_DIR}/OculusSDK")
-			message(SEND_ERROR "Must define OCULUS_HOME as Environment variable or cmake variable, or put the OculusSDK folder into the Project's root directory. Make sure the name of the folder is 'OculusSDK'")
+	# check if there is a OculusSDK subfolder (can be a custom version)
+	if( NOT EXISTS "${CMAKE_SOURCE_DIR}/${libs_dir_name}/OculusSDK")				# USE STANDARD INSTALLATION OculusSDK
+		# if not, check if OCULUS_HOME is defined (environment or cmake variable)
+		if (NOT DEFINED ENV{OCULUS_HOME} AND NOT DEFINED OCULUS_HOME)
+			message(FATAL_ERROR "Can't find OculusSDK. Must define its path in OCULUS_HOME as environment variable or cmake variable, or put OculusSDK folder into '${libs_dir_name}' directory. Make sure the name of the folder is 'OculusSDK'")
+		# if at least one of them is defined, use it	
 		else()
-			set(OCULUS_SDK_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/OculusSDK")
-		endif()
-	# if at least one of them is defined, use it	
-	else()
-		if (NOT DEFINED OCULUS_HOME)
-			message("Environment variable OCULUS_HOME found. This will be used as OculusSDK folder.")
-			set(OCULUS_HOME $ENV{OCULUS_HOME})
-		endif()
-		set(OCULUS_SDK_ROOT_DIR ${OCULUS_HOME})							# both OCULUS_HOME and OCULUS_SDK_ROOT_DIR have same value!
+			if (NOT DEFINED OCULUS_HOME)
+				message("Environment variable OCULUS_HOME found. This will be used as OculusSDK folder.")
+				# set OCULUS_HOME as environment variable
+				set(OCULUS_HOME $ENV{OCULUS_HOME})
+			endif()
+	else()																			# USE LOCAL PATH OculusSDK
+		# set OCULUS_HOME as OculusSDK local path
+		set(OCULUS_HOME "${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OculusSDK")
+		set(OCULUS_SDK_INCLUDE_DIRS "${OCULUS_HOME}"
 	endif()
 
-	# set cmake directory for OCULUS, if any in your installation
-	set(CMAKE_MODULE_PATH "${OCULUS_HOME}/CMake/;${CMAKE_MODULE_PATH}")	# append: OCULUSSDK personal cmake directory
-endif()
+	# set OCULUS_SDK_ROOT_DIR as OCULUS_HOME (compatibility reasons)!
+	set(OCULUS_SDK_ROOT_DIR "${OCULUS_HOME}/LibOVR/Include")
 
+	# add OculusSDK cmake directory to .cmake search path
+	set(CMAKE_MODULE_PATH "${OCULUS_HOME}/CMake/;${CMAKE_MODULE_PATH}")				# append: OCULUSSDK personal cmake directory
+endif()
 
 if(UNIX)	
 	# sdk not available on unix (only BETA)
@@ -202,7 +207,9 @@ source_group("${header_dir_name}" FILES ${header_files})
 #                   ADD SUBPROJECTS (RECURSIVE)				   #
 ################################################################
 
-
+# OCULUSSDK lib - The primary SDK artifact, a static library for Oculus access 
+add_subdirectory(${OCULUS_HOME}/LibOVR)
+set_target_properties(ovr PROPERTIES FOLDER "3rdparty")
 
 
 ################################################################
@@ -224,8 +231,8 @@ include_directories(								# OGRE + OIS include
 	"${OGRE_SAMPLES_INCLUDEPATH}"
 	)
 
-# OCULUSSDK lib
-find_package(OculusSDK REQUIRED)
+# OCULUSSDK lib - FIND_PACKAGE() is greyed out because added as a subproject to compile (a custom version is used)
+#find_package(OculusSDK REQUIRED)
 include_directories(								# OpenCV include
 	"${OCULUS_SDK_INCLUDE_DIRS}"
 	)
