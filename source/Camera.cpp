@@ -55,6 +55,8 @@ void FrameCaptureHandler::captureLoop() {
 		// a CAMERA_BUFFERING_DELAY is used to predict a PAST pose relative to this moment
 		ovrTrackingState tracking = ovrHmd_GetTrackingState(hmd, ovr_GetTimeInSeconds() - CAMERA_BUFFERING_DELAY);
 		
+
+		
 		// grab a new frame
 		if (videoCapture.grab())	// grabs a frame without decoding it
 		{

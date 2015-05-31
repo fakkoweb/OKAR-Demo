@@ -252,8 +252,23 @@ void Scene::setIPD( float IPD )
 //////////////////////////////////////////////////////////////
 void Scene::setCameraTextureLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose)
 {
+	// update image pixels
 	mLeftCameraRenderTexture->getBuffer()->blitFromMemory(image);
 	camera_frame_updated = true;
+
+	// update image position/orientation
+
+
+	// fake pose when Oculus Rift is simulated (NOT DONE)
+	//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
+	//std::cout << delta.getPitch();
+	//Ogre::Quaternion bob(Ogre::Degree(1), Ogre::Vector3::UNIT_Z);
+
+	Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
+	mVideoLeft->setOrientation(delta);
+
+	
+	//mVideoLeft->setPosition(2, 2, 2);
 	//mLeftCameraRenderImage.loadDynamicImage(image.data, image.getWidth(), image.getHeight(), 1, Ogre::PF_BYTE_RGB);
 	//mLeftCameraRenderTexture->loadImage(mLeftCameraRenderImage);
 	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);

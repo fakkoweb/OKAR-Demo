@@ -3,7 +3,7 @@
 bool ROTATE_VIEW = false;
 //bool NO_RIFT = false;
 bool DEBUG_WINDOW = true;
-unsigned short int CAMERA_BUFFERING_DELAY = 30;		// delay between a grab() call and when the frame was actually captured
+unsigned short int CAMERA_BUFFERING_DELAY = 0;		// delay between a grab() call and when the frame was actually captured
 													// This value will be made adjustable at runtime: you will know that the value is
 													// right when you will see that the plane where the camera image is projected is
 													// moving accordingly to the environment that the camera is actually capturing
