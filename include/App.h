@@ -7,6 +7,7 @@
 
 //class Rift;
 
+#include "ConfigDB.h"
 #include "Camera.h"
 #include "Rift.h"
 #include <sstream>
@@ -29,6 +30,7 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		App();
 		~App();
 
+		void loadConfig();
 		void initOgre();
 		void quitOgre();
 		void initOIS();
@@ -58,6 +60,7 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		bool update();
 
 	private:
+		ConfigDB* mConfig;
 
 		OIS::Keyboard* mKeyboard;
 		OIS::Mouse* mMouse;

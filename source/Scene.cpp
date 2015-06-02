@@ -1,5 +1,10 @@
+
 #include "Scene.h"
 #include <chrono>
+#include <cmath>
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 
 bool camera_frame_updated = false;
 
@@ -18,7 +23,8 @@ Scene::Scene( Ogre::Root* root, OIS::Mouse* mouse, OIS::Keyboard* keyboard )
 
 	createRoom();
 	createCameras();
-	createVideos();
+	//Video is created on setupVideo() call
+	//createVideos();
 }
 
 Scene::~Scene()
@@ -135,7 +141,7 @@ void Scene::createCameras()
 	mBodyNode->attachObject(light);
 }
 
-void Scene::createVideos()
+void Scene::createVideos(const float WPlane, const float HPlane)
 {
 	// CREATE SHAPES
 	// -------------
@@ -148,7 +154,7 @@ void Scene::createVideos()
 		"videoMesh",										// this is the name that our resource will have for the whole application!
 		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
 		videoPlane,											// this is the instance from which we build the mesh
-		1, 1, 1, 1,
+		WPlane, HPlane, 1, 1,
 		true,
 		1, 1, 1,
 		Ogre::Vector3::UNIT_Y);								// this is the vector that will be used as mesh UP direction
@@ -170,20 +176,21 @@ void Scene::createVideos()
 	videoPlaneEntity->setMaterialName("CubeMaterialWhite");
 	
 	//Setup mVideoLeft SceneNode position/scale/orientation
-	// X-axis:	will be set up the same as virtual cameras IPD -> see setIPD()
-	// Y-axis:	0 = solidal with mHeadNode
-	// Z-axis:	will be set up depending on the physical camera FOV -> see setFOV()
-	//			toghether with its scale (scale and z position are proportional)
-	mVideoLeft->setPosition(0, 0, -1.0);
+	// X-axis:	we assume real cameras distance (ICD) is the same as IPD, so X is solidal to virtual cameras X value -> see setIPD()
+	// Y-axis:	0 = always solidal to mHeadNode
+	// Z-axis:	this MAY VARY depending on how far the objects can be seen in front of the plane
+	//			To obtain this without varying the FOV, z will always be proportional to plane's scale factor
+	mVideoLeft->setPosition(0, 0, -videoScale);
+	mVideoLeft->setScale(videoScale, videoScale, videoScale);
 
 	//Set camera listeners to this class (so that I can do stuff before and after each renders)
-	mCamLeft->addListener(this);
+	//mCamLeft->addListener(this);			// THIS IS DONE WHEN SEETHROUGH FEATURE IS ENABLED
 
-
+	//mVideoLeft is disabled by default: enableVideo() and disableVideo() methods are provided
+	mVideoLeft->setVisible(false, false);	
 	// CREATE TEXTURES
 	// ---------------
 
-	
 
 	//Create two special textures (TU_RENDERTARGET) that will be applied to the two videoPlaneEntities
 	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
@@ -250,28 +257,114 @@ void Scene::setIPD( float IPD )
 //////////////////////////////////////////////////////////////
 // Handle Camera Input:
 //////////////////////////////////////////////////////////////
-void Scene::setCameraTextureLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose)
+void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose)
 {
-	// update image pixels
-	mLeftCameraRenderTexture->getBuffer()->blitFromMemory(image);
-	camera_frame_updated = true;
+	if (videoIsEnabled)
+	{
+		// update image pixels
+		mLeftCameraRenderTexture->getBuffer()->blitFromMemory(image);
+		camera_frame_updated = true;
 
-	// update image position/orientation
+		// update image position/orientation
+		Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
+		mVideoLeft->setOrientation(delta);
 
+		// fake pose when Oculus Rift is simulated (NOT DONE)
+		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
+		//std::cout << delta.getPitch();
+		//Ogre::Quaternion bob(Ogre::Degree(1), Ogre::Vector3::UNIT_Z);
 
-	// fake pose when Oculus Rift is simulated (NOT DONE)
-	//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
-	//std::cout << delta.getPitch();
-	//Ogre::Quaternion bob(Ogre::Degree(1), Ogre::Vector3::UNIT_Z);
+		//mVideoLeft->setPosition(2, 2, 2);
+		//mLeftCameraRenderImage.loadDynamicImage(image.data, image.getWidth(), image.getHeight(), 1, Ogre::PF_BYTE_RGB);
+		//mLeftCameraRenderTexture->loadImage(mLeftCameraRenderImage);
+		//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+	}
 
-	Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
-	mVideoLeft->setOrientation(delta);
+}
 
-	
-	//mVideoLeft->setPosition(2, 2, 2);
-	//mLeftCameraRenderImage.loadDynamicImage(image.data, image.getWidth(), image.getHeight(), 1, Ogre::PF_BYTE_RGB);
-	//mLeftCameraRenderTexture->loadImage(mLeftCameraRenderImage);
-	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+//////////////////////////////////////////////////////////////
+// Handle User Runtime Settings:
+//////////////////////////////////////////////////////////////
+void Scene::setVideoDistance(const float distance = 1)
+{
+	videoScale = distance;
+	if (videoScale < 0.3f) videoScale = 0.3f;	// CROP to minimum of 0.3 (less would be useless and weird)
+	mVideoLeft->setPosition(0, 0, -videoScale);
+	mVideoLeft->setScale(videoScale, videoScale, videoScale);
+}
+
+void Scene::setupVideo(const float HFov, const float VFov)
+{
+	if (!mVideoLeft)
+	{
+		if (HFov>0 && VFov>0)
+		{
+			float hFovRads = (HFov * M_PI) / 180;
+			float vFovRads = (VFov * M_PI) / 180;
+			float planeWidth = std::tan(hFovRads / 2) * videoScale * 2;
+			float planeHeight = std::tan(vFovRads / 2) * videoScale * 2;
+			createVideos(planeWidth, planeHeight);
+		}
+		else
+		{
+			throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid HFov or VFov input values", "Scene::setupVideo");
+		}
+	}
+	else
+	{
+		throw Ogre::Exception(Ogre::Exception::ERR_INTERNAL_ERROR, "Video has already been setup and created into Scene. setupVideo() must be called only once for Scene instance", "Scene::setupVideo");
+	}
+}
+void Scene::setupVideo(const float WSensor, const float HSensor, const float FL)
+{
+	if (!mVideoLeft)
+	{
+		if (WSensor > 0 && HSensor > 0 && FL > 0)
+		{
+			float planeWidth = (WSensor * videoScale) / FL;
+			float planeHeight = (HSensor * videoScale) / FL;
+			createVideos(planeWidth, planeHeight);
+		}
+		else
+		{
+			throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid WSensor, HSensor or FL input values", "Scene::setupVideo");
+		}
+	}
+	else
+	{
+		throw Ogre::Exception(Ogre::Exception::ERR_INTERNAL_ERROR, "Video has already been setup and created into Scene. setupVideo() must be called only once for Scene instance", "Scene::setupVideo");
+	}
+}
+void Scene::enableVideo()
+{
+	if (!videoIsEnabled)
+	{
+		if (mVideoLeft)
+		{
+			mCamLeft->addListener(this);
+			videoIsEnabled = true;
+		}
+		else
+		{
+			throw Ogre::Exception(Ogre::Exception::ERR_INTERNAL_ERROR, "Video is not setup. setupVideo() must be called first.", "Scene::enableVideo");
+		}
+	}
+}
+void Scene::disableVideo()
+{
+	if (videoIsEnabled)
+	{
+		if (mVideoLeft)
+		{
+			mCamLeft->removeListener(this);
+			mVideoLeft->setVisible(false, false);
+			videoIsEnabled = false;
+		}
+		else
+		{
+			throw Ogre::Exception(Ogre::Exception::ERR_INTERNAL_ERROR, "Video is not setup. setupVideo() must be called first.", "Scene::enableVideo");
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////

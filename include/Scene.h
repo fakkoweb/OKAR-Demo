@@ -13,23 +13,26 @@ class Scene : public Ogre::Camera::Listener
 		~Scene();
 
 		Ogre::SceneManager* getSceneMgr() { return mSceneMgr; }
-
-		// Initialising/Loading the scene
-		void createRoom();
-		void createCameras();
-		void createVideos();
-
-		void update( float dt );
-
 		Ogre::Camera* getLeftCamera() { return mCamLeft; }
 		Ogre::Camera* getRightCamera() { return mCamRight; }
 		Ogre::Camera* getGodCamera() { return mCamGod; }
-		void setIPD( float IPD );
 
+		// One-call functions for the SeeThrough rig setup
+		void setupVideo(const float HFov, const float VFov);
+		void setupVideo(const float WSensor, const float HSensor, const float FL);
+		void enableVideo();
+		void disableVideo();
+		void setVideoDistance(const float dist);
+
+		// One-call functions for Oculus rig setup
+		void setIPD(float IPD);
+
+		// Update functions
+		void update( float dt );
 		void setRiftPose( Ogre::Quaternion orientation, Ogre::Vector3 pos );
-		void setCameraTextureLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose);
+		void setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose);
 		//void setCameraTextureRight();
-
+	
 		// Keyboard and mouse events (forwarded by App)
 		bool keyPressed(const OIS::KeyEvent&);
 		bool keyReleased(const OIS::KeyEvent&);
@@ -42,6 +45,16 @@ class Scene : public Ogre::Camera::Listener
 		void cameraPreRenderScene(Ogre::Camera* cam);
 
 	private:
+
+		bool videoIsEnabled = false;
+		float videoScale = 1.0f;	// default value: plane scaled with factor 1, at distance 1 from the eye
+									// Warning: real distance between real cameras and the eye is not yet considered/implemented!
+
+		// Initialising/Loading the scene
+		void createRoom();
+		void createCameras();
+		void createVideos(const float WPlane, const float HPlane);
+
 		Ogre::Root* mRoot;
 		OIS::Mouse* mMouse;
 		OIS::Keyboard* mKeyboard;
@@ -56,7 +69,7 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::Camera* mCamRight;
 		Ogre::Camera* mCamGod;
 
-		Ogre::SceneNode* mVideoLeft;
+		Ogre::SceneNode* mVideoLeft = nullptr;
 		Ogre::SceneNode* mHeadNode;
 		Ogre::SceneNode* mBodyNode;
 		Ogre::SceneNode* mBodyTiltNode;
