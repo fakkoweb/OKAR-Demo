@@ -22,6 +22,11 @@ extern "C" {
 		{
 			std::string arg( argv[i] );
 
+			if (arg == "-cbd" && i<argc-1)
+			{
+				CAMERA_BUFFERING_DELAY = atoi(argv[++i]);
+			}
+
 			// This flag triggers the DK1/DK2 view rotation (set this up as you need it)
 			if( arg == "--rotate-view" )
 			{
