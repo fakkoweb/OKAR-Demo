@@ -75,6 +75,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/${binary_dir_name})
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+unset(LIBS_TO_LINK)
 
 # cmake build variables
 if (CMAKE_BUILD_TYPE STREQUAL "")
@@ -104,7 +105,7 @@ if(WIN32)
 	else()
 		if (NOT DEFINED OGRE_HOME)
 			message("Environment variable OGRE_HOME found. This will be used as OgreSDK folder.")
-			set(OGRE_HOME $ENV{OGRE_HOME})
+			set(OGRE_HOME $ENV{OGRE_HOME})# CACHE PATH "Location of your Ogre3D libraries")
 		endif()
 		if (NOT DEFINED OGRE_BUILD OR "${OGRE_BUILD}" STREQUAL "")
 			set(OGRE_BUILD ${OGRE_HOME})
@@ -115,14 +116,15 @@ if(WIN32)
 
 	endif()
 
-	# set cmake directory for OGRE
+	# set cmake directory for OGRE (when a findOgre.cmake is not found in local "cmake" dir)
 	set(CMAKE_MODULE_PATH "${OGRE_HOME}/CMake/;${CMAKE_MODULE_PATH}")	# append: OGRE personal cmake directory
-	set(OGRE_SAMPLES_INCLUDEPATH "${OGRE_HOME}/Samples/Common/include")		# useless???
+	set(OGRE_SAMPLES_INCLUDEPATH "${OGRE_HOME}/Samples/Common/include")	
 
 endif(WIN32)
 
 if(UNIX)
 
+	# this is a dirty trick: we should rely only on the local findOgre.cmake or OGRE_HOME to find it
 	# look for cmake directory for OGRE (different options assumed here)
 	if(EXISTS "/usr/local/lib/OGRE/cmake")
  
@@ -135,19 +137,44 @@ if(UNIX)
 	  set(OGRE_SAMPLES_INCLUDEPATH "/usr/share/OGRE/samples/Common/include/") # Otherwise, this one
  
 	else ()
-	  message(SEND_ERROR "Failed to find module path.")
+	  message(SEND_ERROR "Failed to find cmake module path.")
 	endif(EXISTS "/usr/local/lib/OGRE")
 
 endif(UNIX)
+
+# force OGRE_SDK_ROOT_DIR to show OGRE_HOME value
+set(OGRE_SDK_ROOT_DIR "${OGRE_HOME}" CACHE PATH "Location of your Ogre3D libraries" FORCE)
+	
 
 ################################################################
 #                   OCULUSSDK SETUP	                           #
 ################################################################
 
+# BY DEFAULT, WE TRY TO USE BUNDLED VERSION
+# The user may decide to use its own OculusSDK version, so we offer him this option
+# NOTE:	default is giving priority to the bundled version, this is because it can be specifically tweaked for this project.
+#		If you don't like it, just : project will work, but with less functionality
+if( EXISTS "${CMAKE_SOURCE_DIR}/${libs_dir_name}/OculusSDK")
+	message(STATUS "Bundled OculusSDK found in '/${libs_dir_name}'.")
+	set (BUNDLED_OculusSDK_FOUND true)
+	set (USE_BUNDLED_OculusSDK true CACHE BOOL "Use the version of OculusSDK bundled in this project (within '/${libs_dir_name}' folder)" )
+else()
+	message(STATUS "No bundled OculusSDK found in '/${libs_dir_name}'.")
+	set (BUNDLED_OculusSDK_FOUND false)
+endif()
+
 if(WIN32)
-	# check if there is a OculusSDK subfolder (can be a custom version)
-	if( NOT EXISTS "${CMAKE_SOURCE_DIR}/${libs_dir_name}/OculusSDK")				# USE STANDARD INSTALLATION OculusSDK
-		# if not, check if OCULUS_HOME is defined (environment or cmake variable)
+	# if there a OculusSDK subfolder (like a custom version in this project) and we want to use it (default choice)
+	if(BUNDLED_OculusSDK_FOUND AND USE_BUNDLED_OculusSDK)
+		message("Using bundled OculusSDK lib. Uncheck 'USE_BUNDLED_OculusSDK' flag if you wish to use the version in your system.")
+		# set OCULUS_HOME cmake variable as OculusSDK local path
+		set(OCULUS_HOME "${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OculusSDK")# CACHE PATH "Location of your OculusSDK libraries" FORCE)
+		set(OCULUS_SDK_INCLUDE_DIRS "${OCULUS_HOME}/LibOVR/Include")
+		list(APPEND OCULUS_SDK_INCLUDE_DIRS "${OCULUS_HOME}/LibOVRKernel/Src")		# THIS IS WIERD.. but i need it for compiling an header from OculusSDK
+	# else, USE STANDARD INSTALLATION OculusSDK
+	else()
+		message("Using OculusSDK from your system. Check 'USE_BUNDLED_OculusSDK' flag if you wish to use the version bundled in the project.")
+		# check if OCULUS_HOME is defined (environment or cmake variable)
 		if (NOT DEFINED ENV{OCULUS_HOME} AND NOT DEFINED OCULUS_HOME)
 			message(FATAL_ERROR "Can't find OculusSDK. Must define its path in OCULUS_HOME as environment variable or cmake variable, or put OculusSDK folder into '${libs_dir_name}' directory. Make sure the name of the folder is 'OculusSDK'")
 		# if at least one of them is defined, use it	
@@ -155,35 +182,24 @@ if(WIN32)
 			if (NOT DEFINED OCULUS_HOME)
 				message("Environment variable OCULUS_HOME found. This will be used as OculusSDK folder.")
 				# set OCULUS_HOME as environment variable
-				set(OCULUS_HOME $ENV{OCULUS_HOME})
+				set(OCULUS_HOME $ENV{OCULUS_HOME})# CACHE PATH "Location of your OculusSDK libraries" FORCE)
 			endif()
 		endif()
-	else()																			# USE LOCAL PATH OculusSDK
-		# set OCULUS_HOME as OculusSDK local path
-		message("Local OculusSDK lib folder found. This will be used as OculusSDK folder.")
-		set(OCULUS_HOME "${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OculusSDK")
-		set(OCULUS_SDK_INCLUDE_DIRS "${OCULUS_HOME}/LibOVR/Include")
-		list(APPEND OCULUS_SDK_INCLUDE_DIRS "${OCULUS_HOME}/LibOVRKernel/Src")		# THIS IS WIERD.. but i need it for compiling an header from OculusSDK
 	endif()
-
-	# set OCULUS_SDK_ROOT_DIR as OCULUS_HOME (compatibility reasons)!
-	set(OCULUS_SDK_ROOT_DIR "${OCULUS_HOME}")
 
 	# add OculusSDK cmake directory to .cmake search path
 	set(CMAKE_MODULE_PATH "${OCULUS_HOME}/CMake/;${CMAKE_MODULE_PATH}")				# append: OCULUSSDK personal cmake directory
+
+	
 endif()
 
 if(UNIX)	
 	# sdk not available on unix (only BETA)
 endif(UNIX)
  
-
-
-
-
-
-
-
+# force OCULUS_SDK_ROOT_DIR to show OCULUS_HOME value
+set(OCULUS_SDK_ROOT_DIR "${OCULUS_HOME}" CACHE PATH "Location of your OculusSDK libraries" FORCE)
+	
 
 
 ################################################################
@@ -210,23 +226,25 @@ source_group("${header_dir_name}" FILES ${header_files})
 #                   ADD SUBPROJECTS (RECURSIVE)				   #
 ################################################################
 
-# OCULUSSDK lib - The primary SDK artifact, a static library for Oculus access 
-add_subdirectory(${OCULUS_HOME}/LibOVR)
-set_target_properties(ovr PROPERTIES FOLDER "3rdParty")
-
+# OculusSDK lib - add as subproject if using bundled version!
+if(USE_BUNDLED_OculusSDK)
+	add_subdirectory(${OCULUS_HOME}/LibOVR)			# OculusSDK subproject config
+	set_target_properties(ovr PROPERTIES FOLDER "3rdParty")
+	list(APPEND LIBS_TO_LINK ovr)					# OculusSDK subproject link
+endif()
 
 ################################################################
 #                   EXTERNAL DEPENDENCIES                      #
 ################################################################
-#find_package(OpenGL REQUIRED)
-#find_package(GLEW REQUIRED)
-#find_package(Qt4 REQUIRED)
-#find_package(Eigen REQUIRED)
-#find_package(CUDA REQUIRED)
 
 # OIS + OGRE lib
 find_package(OIS REQUIRED)							# OIS cmake config
 find_package(OGRE REQUIRED)							# OGRE cmake config
+list(APPEND LIBS_TO_LINK							# OGRE + OIS cmake link
+	${OGRE_LIBRARIES}								
+	${OGRE_Overlay_LIBRARIES}						
+	${OIS_LIBRARIES}								
+	)
 include_directories(								# OGRE + OIS include
 	"${OIS_INCLUDE_DIRS}"
 	"${OGRE_INCLUDE_DIRS}"
@@ -234,14 +252,18 @@ include_directories(								# OGRE + OIS include
 	"${OGRE_SAMPLES_INCLUDEPATH}"
 	)
 
-# OCULUSSDK lib - FIND_PACKAGE() is greyed out because added as a subproject to compile (a custom version is used)
-#find_package(OculusSDK REQUIRED)
-include_directories(								# OpenCV include
+# OculusSDK lib - add as external library if not using bundled version!
+if(NOT USE_BUNDLED_OculusSDK)						
+	find_package(OculusSDK REQUIRED)				# OculusSDK cmake config
+	list(APPEND LIBS_TO_LINK ${OCULUS_SDK_LIBRARIES})# OculusSDK cmake link
+endif()
+include_directories(								# OculusSDK include
 	"${OCULUS_SDK_INCLUDE_DIRS}"
 	)
-
+							
 # OPENCV lib
 find_package(OpenCV REQUIRED)						# OpenCV cmake config
+list(APPEND LIBS_TO_LINK ${OpenCV_LIBS})			# OpenCV cmake link
 include_directories(								# OpenCV include
 	"${OpenCV_INCLUDE_DIRS}"
 	)
@@ -257,20 +279,9 @@ ADD_EXECUTABLE("${exe_name}" ${source_files} ${header_files})
 
 # All platforms
 target_link_libraries("${exe_name}"
-	ovr
-	${OpenCV_LIBS}									# OpenCV lib
-	${OIS_LIBRARIES}								# OIS lib
-	${OGRE_LIBRARIES}								# OGRE libs
-	${OGRE_Overlay_LIBRARIES}
+	${LIBS_TO_LINK}
 	#${Boost_LIBRARY_DIRS}							# Boost libraries (if your Ogre needs it)
-	${OCULUS_SDK_LIBRARIES}							# OCULUSSDK lib
-)
-message( 	${OpenCV_LIBS}						
-	${OIS_LIBRARIES}							
-	${OGRE_LIBRARIES}							
-	${OGRE_Overlay_LIBRARIES}
-	ovr
-	)					
+)					
 
 # Win32 specific
 if( WIN32 )
@@ -324,7 +335,6 @@ string(REGEX REPLACE "PluginFolder=[^\n]*"
 string(REGEX REPLACE "PluginFolder=[^\n]*"
 	"PluginFolder=${OGRE_PLUGIN_DIR_DBG}" PLUGINS_D_FILE_MODIFIED
 	${PLUGINS_D_FILE})
-message(${PROJECT_BINARY_DIR})
 file(WRITE ${CMAKE_SOURCE_DIR}/${config_dir_name}/plugins.cfg ${PLUGINS_FILE_MODIFIED})
 file(WRITE ${CMAKE_SOURCE_DIR}/${config_dir_name}/plugins_d.cfg ${PLUGINS_D_FILE_MODIFIED})
 message(STATUS "plugins.cfg and plugins.cfg updated according to your setup.")
@@ -348,9 +358,14 @@ unset(RESOURCES_FILE_MODIFIED)	# empty the variable if previously used..
 foreach(Line ${ContentsAsList})
   # Don't modify the line if resource path starts with one ore more "."
   if(NOT "${Line}" MATCHES "^FileSystem=[.]+")
-    string(REGEX REPLACE "=.*/media" "=${OGRE_HOME_BACKSLASHES}/media" Line ${Line})	# "media" is Ogre media folder
-    																					# NOT user's local media folder!
-    																					# DO NOT CHANGE THIS!!
+  	# WE MAKE AN ASSUMPTION: Ogre global media files were in a path that contained the word "Media"
+  	# so we assume that any modifications made to this file by you contain this word.
+  	# But.. this MAY CHANGE in the future! So, to make it stronger, we try with "media", "Media" and "MEDIA".
+  	# Paths not containing these words remain UNTOUCHED
+    string(REGEX REPLACE "=.*/media" "=${OGRE_MEDIA_DIR}" Line ${Line})	# media
+    string(REGEX REPLACE "=.*/Media" "=${OGRE_MEDIA_DIR}" Line ${Line})	# Media (most likely)
+    string(REGEX REPLACE "=.*/MEDIA" "=${OGRE_MEDIA_DIR}" Line ${Line})	# MEDIA
+    # now all those paths REFERENCE CORRECTLY the Ogre media folder installed in your system!																			
   endif()
   # Swap the appended Esc character back out in favour of a line feed
   string(REGEX REPLACE "${Esc}" "\n" Line ${Line})
@@ -359,6 +374,14 @@ foreach(Line ${ContentsAsList})
 endforeach()
 file(WRITE ${CMAKE_SOURCE_DIR}/${config_dir_name}/resources.cfg ${RESOURCES_FILE_MODIFIED})
 message(STATUS "resources.cfg updated according to your setup.")
+
+# ok.. but now what is the name of YOUR Ogre media folder?
+# better if we save it: we must use it to identify the absolute part of the paths
+# and strip it when INSTALL is performed (and convert the path from absolute to relative)
+# see PostInstall.cmake file for details on how I do it :)
+string(REGEX MATCH "([^.]+)/([^/]+)$" OGRE_MEDIA_FOLDER_NAME ${OGRE_MEDIA_DIR})
+set(OGRE_MEDIA_FOLDER_NAME ${CMAKE_MATCH_2})
+# now OGRE_MEDIA_FOLDER_NAME contains the word extracted after the last "/" found
 
 
 
@@ -473,6 +496,7 @@ endif()
 # 	2 - set path to Ogre plugins in plugins.cfg to RELATIVE
 #	3 - copy only needed media (parsing resources.cfg) from Ogre media directory to /media
 #	4 - set paths to Ogre media in resources.cfg to RELATIVE
-configure_file(${CMAKE_INSTALL_SCRIPT} ${CMAKE_INSTALL_SCRIPT_SPECIFIC} @ONLY)	# @ONLY means only replace @VARS@ and not ${VARS}
+configure_file(${CMAKE_INSTALL_SCRIPT} ${CMAKE_INSTALL_SCRIPT_SPECIFIC} @ONLY)	# this command allows to mirror variables from this file to another
+																				# @ONLY means only @VARS@ (and not ${VARS}) will be replaced in destination file!
 install (SCRIPT ${CMAKE_INSTALL_SCRIPT_SPECIFIC})
 
