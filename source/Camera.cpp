@@ -8,11 +8,17 @@ float FrameCaptureHandler::startCapture()
 	videoCapture.open(deviceId);
 	if (!videoCapture.isOpened() || !videoCapture.read(frame.image))
 	{
-		std::cerr << "Could not open video source to capture first frame";
+		std::cout << "Could not open video source to capture first frame";
 	}
 	else
 	{
+		videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('H', '2', '6', '4'));
+		//videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('M', 'J', 'P', 'G'));
+		videoCapture.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
+		videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
+		videoCapture.set(CV_CAP_PROP_FPS, 30);
 		aspectRatio = (float)frame.image.cols / (float)frame.image.rows;
+		stopped = false;
 		captureThread = std::thread(&FrameCaptureHandler::captureLoop, this);
 		std::cout << "Capture loop for camera " << deviceId << " started." << std::endl;
 	}
@@ -22,7 +28,10 @@ float FrameCaptureHandler::startCapture()
 void FrameCaptureHandler::stopCapture() {
 	stopped = true;
 	captureThread.join();
-	videoCapture.release();
+	if (videoCapture.isOpened())
+	{
+		videoCapture.release();
+	}
 }
 
 void FrameCaptureHandler::set(const FrameCaptureData & newFrame) {

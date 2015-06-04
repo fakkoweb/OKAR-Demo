@@ -195,7 +195,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	//Create two special textures (TU_RENDERTARGET) that will be applied to the two videoPlaneEntities
 	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 640, 480, 0, Ogre::PF_R8G8B8,
+		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 
 	// Creare new materials and assign the two textures that can be used on the shapes created

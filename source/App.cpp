@@ -149,11 +149,12 @@ void App::loadConfig()
 		}
 		catch (Ogre::FileNotFoundException& e)
 		{
-			// return from loadConfig() -- default values will be used (initialization values)
+			// return silently from loadConfig() -- hardcoded default values or main arguments will be used
 			return;
 		}
 	}
 
+	// Overwrite parameters values
 	CAMERA_BUFFERING_DELAY = mConfig->getValueAsInt("Camera/BufferingDelay");
 	ROTATE_VIEW = mConfig->getValueAsBool("Oculus/RotateView");
 
@@ -503,7 +504,8 @@ void App::initCameras()
 	mCameraLeft->startCapture();
 	//mCameraRight->startCapture();
 
-	cv::namedWindow("CameraDebug", cv::WINDOW_AUTOSIZE);
+	cv::namedWindow("CameraDebug", cv::WINDOW_NORMAL);
+	cv::resizeWindow("CameraDebug", 1920 / 4, 1080 / 4);
 }
 
 void App::quitCameras()
@@ -556,7 +558,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		
 		
 		std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
-		mOgrePixelBoxLeft = Ogre::PixelBox(640, 480, 1, Ogre::PF_R8G8B8, uno.image.ptr<uchar>(0));
+		mOgrePixelBoxLeft = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, uno.image.ptr<uchar>(0));
 		std::cout << "sending new image to the scene..." << std::endl;
 		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft,uno.pose);
 		std::cout << "image sent!\nImage plane updated!" << std::endl;
