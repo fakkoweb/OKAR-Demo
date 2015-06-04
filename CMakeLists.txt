@@ -36,7 +36,7 @@ project (OgreTest)
 
 # all directories names relative to CMAKE_SOURCE_DIR
 set (libs_dir_name	 "libs")		# name of the dir containing ALL subprojects/libs to be compiled toghether with this project
-set (source_dir_name "source")		# name of the dir containing ALL implementations
+set (source_dir_name "src")			# name of the dir containing ALL implementations
 set (header_dir_name "include")		# name of the dir containing ALL declarations
 set (binary_dir_name "build")		# name of the dir that will contain build results (Release, Debug, ..)
 set (media_dir_name  "media")		# name of the dir containing LOCAL media (not Ogre's or any other 3rd party app)
@@ -55,7 +55,7 @@ set (cmake_dir_name "cmake")		# name of the dir containing cmake files for this 
 									# N.B.	cmake will search in the standard cmake directory,
 									#		then in this directory,
 									#		then will search into sdk own cmake directories (if they have any)
-set (exe_name "OgreTest")			# name of executable
+set (exe_name "OgreTest")				# name of executable
 set (install_script_name "PostInstall")	# name of the TEMPLATE cmake file for generating install script
 										# all @VARS@ in this file will be replaced with current specific values
 										# at the end of this script with configure_file() and then used at install time.
@@ -101,7 +101,9 @@ if(WIN32)
 	# check if OGRE_HOME is defined
 	if (NOT DEFINED ENV{OGRE_HOME} AND NOT DEFINED OGRE_HOME)
 		message(SEND_ERROR "Must define OGRE_HOME (as Environment variable or cmake variable). You can also set it manually now and run Configure again.")
-	# if at least one of them is defined, use it	
+		# give the option to setup OCULUS_HOME manually
+		set(OGRE_HOME "${OGRE_HOME}" CACHE PATH "Location of your Ogre libraries")
+	# if at least one of them is defined, use it
 	else()
 		if (NOT DEFINED OGRE_HOME)
 			message("Environment variable OGRE_HOME found. This will be used as OgreSDK folder.")
@@ -150,7 +152,6 @@ endif(UNIX)
 #                   OCULUSSDK SETUP	                           #
 ################################################################
 
-
 # check if there is a bundled version of OculusSDK in this project lib folder
 # NOTE:	default is giving priority to the bundled version, this is because it can be specifically tweaked for this project.
 #		If you don't like it, just : project will work, but with less functionality
@@ -191,8 +192,8 @@ if(WIN32)
 		set (COMPILE_OculusSDK false)
 		# if OCULUS_HOME is NOT defined (environment or cmake variable)
 		if (NOT DEFINED ENV{OCULUS_HOME} AND NOT DEFINED OCULUS_HOME)
-			# throw FATAL_ERROR
-			message(FATAL_ERROR "Can't find OculusSDK. Must define OCULUS_HOME (as Environment variable or cmake variable), or put 'OculusSDK' folder into '${libs_dir_name}' directory. You can also set it manually now and run Configure again.")
+			# throw ERROR
+			message(SEND_ERROR "Can't find OculusSDK. Must define OCULUS_HOME (as Environment variable or cmake variable), or put 'OculusSDK' folder into '${libs_dir_name}' directory. You can also set it manually now and run Configure again.")
 			# give the option to setup OCULUS_HOME manually
 			set(OCULUS_HOME "${OCULUS_HOME}" CACHE PATH "Location of your OculusSDK libraries")
 		# if one of them is defined, use it	
@@ -254,7 +255,7 @@ if(USE_BUNDLED_OculusSDK)
 			message("Failed to find bundled OculusSDK precompiled libraries. Source code available. Will force to compile it.")
 			set (COMPILE_OculusSDK true CACHE BOOL "[FORCED] Compile the source of OculusSDK toghether with the project" FORCE)
 		else()
-			message(FATAL_ERROR "Failed to find bundled OculusSDK libraries/source.")
+			message(SEND_ERROR "Failed to find bundled OculusSDK libraries/source.")
 		endif()
 	endif()	
 else()
