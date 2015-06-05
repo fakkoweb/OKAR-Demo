@@ -1,0 +1,4 @@
+[submodule "libs/OgreOculusApp"]
+	path = libs/OgreOculusApp
+	url = https://github.com/fakkoweb/OgreOculusApp.git
+	branch = chocolate
