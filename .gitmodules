@@ -1,3 +1,6 @@
 [submodule "libs/OculusSDK"]
 	path = libs/OculusSDK
 	url = https://github.com/fakkoweb/OculusSDK.git
+[submodule "libs/OgreOculusApp"]
+	path = libs/OgreOculusApp
+	url = https://fakkoweb@github.com/fakkoweb/OgreOculusApp.git
