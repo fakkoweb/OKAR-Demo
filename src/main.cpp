@@ -9,10 +9,8 @@
 
 #include <iostream>
 #include "Globals.h"
-
 #include "App.h"
-
-extern "C" {
+#include "OGRE/Ogre.h"
 
     int main(int argc, char *argv[])
     {
@@ -55,12 +53,38 @@ extern "C" {
 			}
 		}
 
+		// LOAD APP WITH MY CONFIGURATION VALUES
 		// Creates the main program and starts rendering. When a framelistener
 		// returns false, this will return.
-		App* app = new App();
+		std::string configFilePathPrefix = "cfg/";			// configuration files default location when app is installed
+		std::string paramsFileName = "parameters.cfg";		// parameters config file name
+		App* app;
 
+		// Try to load load up a valid config file (start the program with default values if none is found)
+		try
+		{
+			//This will work ONLY when application is installed (only Release application)!
+			app = new App(configFilePathPrefix + paramsFileName);
+		}
+		catch (Ogre::FileNotFoundException& e)
+		{
+			try
+			{
+				// if no existing config, or could not restore it, try to load from a different location
+				configFilePathPrefix = "../cfg/";
+
+				// This will work ONLY when application is in development (Debug/Release configuration)
+				app = new App(configFilePathPrefix + paramsFileName);
+			}
+			catch (Ogre::FileNotFoundException& e)
+			{
+				// critical failure
+				throw e;
+			}
+		}
+
+		// App construction has finished = App has finished its job :)
 		delete app;
 
         return 0;
     }
-}
