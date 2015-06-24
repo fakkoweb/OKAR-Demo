@@ -18,9 +18,9 @@
 #	- all release configuration files are copied in config distribution subdir and updated to reference the copied files
 # A PostInstall.cmake script template is used to parse configuration files and copy all contents.
 
-cmake_minimum_required(VERSION 2.8.11)
-cmake_policy(VERSION 2.8.11)
-cmake_policy(SET CMP0048 OLD)			# how to set project version (retrocompatibility with OLD rule)
+cmake_minimum_required(VERSION 2.8.9)
+cmake_policy(VERSION 2.8.9)
+#cmake_policy(SET CMP0048 OLD)			# how to set project version (retrocompatibility with OLD rule)
 
 # useful boolean variable to understand fast if this project is used as subproject or main project
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
