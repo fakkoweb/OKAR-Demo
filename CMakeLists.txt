@@ -18,9 +18,9 @@
 #	- all release configuration files are copied in config distribution subdir and updated to reference the copied files
 # A PostInstall.cmake script template is used to parse configuration files and copy all contents.
 
-cmake_minimum_required(VERSION 2.8.9)
-cmake_policy(VERSION 2.8.9)
-#cmake_policy(SET CMP0048 OLD)			# how to set project version (retrocompatibility with OLD rule)
+cmake_minimum_required(VERSION 2.8.12)
+cmake_policy(VERSION 2.8.12)
+cmake_policy(SET CMP0048 OLD)			# how to set project version (retrocompatibility with OLD rule)
 
 # useful boolean variable to understand fast if this project is used as subproject or main project
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -121,11 +121,11 @@ set(PROJECT_MEDIA_DIR ${CMAKE_SOURCE_DIR}/${media_dir_name})
 ################################################################
 
 # OPENCV lib
-find_package(OpenCV REQUIRED)						# OpenCV lib config
-list(APPEND LIBRARIES_TO_LINK ${OpenCV_LIBS})		# OpenCV lib link
-list(APPEND HEADERS_TO_INCLUDE_PUBLIC				# OpenCV lib include
-	"${OpenCV_INCLUDE_DIRS}"
-	)
+#find_package(OpenCV REQUIRED)						# OpenCV lib config
+#list(APPEND LIBRARIES_TO_LINK ${OpenCV_LIBS})		# OpenCV lib link
+#list(APPEND HEADERS_TO_INCLUDE_PUBLIC				# OpenCV lib include
+#	"${OpenCV_INCLUDE_DIRS}"
+#	)
 
 
 ################################################################
