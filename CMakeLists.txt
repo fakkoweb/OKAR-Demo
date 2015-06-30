@@ -18,9 +18,9 @@
 #	- all release configuration files are copied in config distribution subdir and updated to reference the copied files
 # A PostInstall.cmake script template is used to parse configuration files and copy all contents.
 
-cmake_minimum_required(VERSION 2.8.12)
-cmake_policy(VERSION 2.8.12)
-cmake_policy(SET CMP0048 OLD)			# how to set project version (retrocompatibility with OLD rule)
+cmake_minimum_required(VERSION 2.8.9)
+cmake_policy(VERSION 2.8.9)
+#cmake_policy(SET CMP0048 OLD)			# how to set project version (retrocompatibility with OLD rule)
 
 # useful boolean variable to understand fast if this project is used as subproject or main project
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -28,19 +28,6 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 else()
 	set(IS_SUBPROJECT true)
 endif()
-
-# MACRO to set value of a variable if not already set
-# useful when we don't know if this project is used as a subproject or not
-# (therefore some variable could have been already set from top-level cmakefile)
-macro(setifnotdef var_name var_value)
-	if(NOT DEFINED ${var_name})
-		if(IS_SUBPROJECT)
-			set(${var_name} ${var_value} PARENT_SCOPE)
-		else()
-			set(${var_name} ${var_value})
-		endif()
-	endif()
-endmacro()
 
 
 ################################################################
@@ -237,7 +224,11 @@ set_target_properties(${OUTPUT_FILE_NAME} PROPERTIES DEBUG_POSTFIX _d)
 if( WIN32 )
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /DWIN32_LEAN_AND_MEAN")
 endif()
-
+if( UNIX )
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -ansi -std=c++11")
+	message(${CMAKE_CXX_FLAGS})
+	message(${CMAKE_CXX_FLAGS_DEBUG})
+endif()
 
 
 ################################################################
