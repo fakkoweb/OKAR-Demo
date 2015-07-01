@@ -161,7 +161,7 @@ endif()
 ################################################################
 
 if(DEFINED HEADERS_TO_INCLUDE_PUBLIC)
-	target_include_directories(${OUTPUT_FILE_NAME} PUBLIC ${HEADERS_TO_INCLUDE_PUBLIC})		# these headers will be accessible from parent projects and can be
+	target_include_directories(${OUTPUT_FILE_NAME} PUBLIC ${HEADERS_TO_INCLUDE_PUBLIC})			# these headers will be accessible from parent projects and can be
 endif()																							# included automatically by including:
 																								# $<TARGET_PROPERTY:OgreOculusApp,INTERFACE_INCLUDE_DIRECTORIES>
 																								# as PRIVATE or PUBLIC to your target.
