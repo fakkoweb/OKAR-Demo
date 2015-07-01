@@ -225,9 +225,7 @@ if( WIN32 )
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /DWIN32_LEAN_AND_MEAN")
 endif()
 if( UNIX )
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -ansi -std=c++11")
-	message(${CMAKE_CXX_FLAGS})
-	message(${CMAKE_CXX_FLAGS_DEBUG})
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
 
